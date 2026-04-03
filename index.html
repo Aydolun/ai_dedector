@@ -7,119 +7,83 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
 :root {
-  --bg: #ffffff;
-  --bg-secondary: #fafafa;
-  --border: #e0e0e0;
-  --text: #1a1a1a;
-  --text-secondary: #666666;
-  --text-muted: #999999;
-  --card-bg: #ffffff;
-  --card-hover: #f5f5f5;
+  --bg: #ffffff; --bg-secondary: #fafafa; --border: #e0e0e0;
+  --text: #1a1a1a; --text-secondary: #666666; --text-muted: #999999;
+  --card-bg: #ffffff; --card-hover: #f5f5f5;
   --shadow: 0 1px 3px rgba(0,0,0,0.06);
-  --red: #E24B4A;
-  --red-bg: #fef2f2;
-  --red-text: #991b1b;
-  --yellow: #EF9F27;
-  --yellow-bg: #fffbeb;
-  --yellow-text: #92400e;
-  --green: #639922;
-  --green-bg: #f0fdf4;
-  --green-text: #166534;
-  --accent: #6366f1;
-  --accent-bg: #eef2ff;
+  --red: #E24B4A; --red-bg: #fef2f2; --red-text: #991b1b;
+  --yellow: #EF9F27; --yellow-bg: #fffbeb; --yellow-text: #92400e;
+  --green: #639922; --green-bg: #f0fdf4; --green-text: #166534;
+  --accent: #6366f1; --accent-bg: #eef2ff;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0f0f0f;
-    --bg-secondary: #1a1a1a;
-    --border: #2a2a2a;
-    --text: #e5e5e5;
-    --text-secondary: #a3a3a3;
-    --text-muted: #737373;
-    --card-bg: #1a1a1a;
-    --card-hover: #222222;
+    --bg: #0f0f0f; --bg-secondary: #1a1a1a; --border: #2a2a2a;
+    --text: #e5e5e5; --text-secondary: #a3a3a3; --text-muted: #737373;
+    --card-bg: #1a1a1a; --card-hover: #222222;
     --shadow: 0 1px 3px rgba(0,0,0,0.3);
-    --red-bg: #1c0a0a;
-    --red-text: #fca5a5;
-    --yellow-bg: #1a1400;
-    --yellow-text: #fcd34d;
-    --green-bg: #0a1a05;
-    --green-text: #86efac;
+    --red-bg: #1c0a0a; --red-text: #fca5a5;
+    --yellow-bg: #1a1400; --yellow-text: #fcd34d;
+    --green-bg: #0a1a05; --green-text: #86efac;
     --accent-bg: #1a1a3a;
   }
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  line-height: 1.6;
-  padding: 2rem 1rem;
-  max-width: 1100px;
-  margin: 0 auto;
+  background: var(--bg); color: var(--text); line-height: 1.6;
+  padding: 2rem 1rem; max-width: 1100px; margin: 0 auto;
 }
 h1 {
-  font-size: 1.8rem;
-  font-weight: 700;
-  margin-bottom: 0.3rem;
+  font-size: 1.8rem; font-weight: 700; margin-bottom: 0.3rem;
   background: linear-gradient(90deg, #6366f1, #8b5cf6);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
 .subtitle { color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1.5rem; }
-textarea {
-  width: 100%;
-  min-height: 180px;
-  padding: 1rem;
-  border: 0.5px solid var(--border);
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-family: inherit;
-  resize: vertical;
-  background: var(--card-bg);
-  color: var(--text);
-  outline: none;
+.input-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+#urlInput {
+  flex: 1; padding: 0.75rem 1rem; border: 0.5px solid var(--border);
+  border-radius: 8px; font-size: 0.95rem; font-family: inherit;
+  background: var(--card-bg); color: var(--text); outline: none;
   transition: border-color 0.2s;
 }
-textarea:focus { border-color: var(--accent); }
-.btn-row { display: flex; gap: 0.75rem; margin-top: 0.75rem; flex-wrap: wrap; }
+#urlInput:focus { border-color: var(--accent); }
 .btn {
-  padding: 0.6rem 1.4rem;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.2s;
+  padding: 0.75rem 1.4rem; border: none; border-radius: 8px;
+  font-size: 0.9rem; font-weight: 600; cursor: pointer;
+  transition: opacity 0.2s; white-space: nowrap;
 }
 .btn:hover { opacity: 0.85; }
 .btn-primary { background: var(--accent); color: #fff; }
 .btn-secondary { background: var(--bg-secondary); color: var(--text); border: 0.5px solid var(--border); }
-.results { display: none; margin-top: 2rem; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.status-bar {
+  padding: 0.6rem 1rem; border-radius: 6px; font-size: 0.85rem;
+  margin-bottom: 1rem; display: none;
+}
+.status-bar.visible { display: block; }
+.status-loading { background: var(--accent-bg); color: var(--accent); }
+.status-error { background: var(--red-bg); color: var(--red-text); }
+.status-success { background: var(--green-bg); color: var(--green-text); }
+.meta-info {
+  padding: 0.6rem 1rem; background: var(--bg-secondary);
+  border-radius: 6px; font-size: 0.85rem; color: var(--text-secondary);
+  margin-bottom: 1.5rem; display: none;
+}
+.meta-info.visible { display: block; }
+.results { display: none; margin-top: 1rem; }
 .results.visible { display: block; }
 .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 0.75rem; }
 .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 0.75rem; }
-@media (max-width: 768px) {
-  .grid-4 { grid-template-columns: repeat(2, 1fr); }
-  .grid-2 { grid-template-columns: 1fr; }
-}
-@media (max-width: 480px) {
-  .grid-4 { grid-template-columns: 1fr; }
-}
+@media (max-width: 768px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } .grid-2 { grid-template-columns: 1fr; } }
+@media (max-width: 480px) { .grid-4 { grid-template-columns: 1fr; } .input-row { flex-direction: column; } }
 .card {
-  background: var(--card-bg);
-  border: 0.5px solid var(--border);
-  border-radius: 8px;
-  padding: 1.2rem;
-  box-shadow: var(--shadow);
+  background: var(--card-bg); border: 0.5px solid var(--border);
+  border-radius: 8px; padding: 1.2rem; box-shadow: var(--shadow);
 }
 .card-title {
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
-  font-weight: 600;
-  margin-bottom: 0.5rem;
+  font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text-muted); font-weight: 600; margin-bottom: 0.5rem;
 }
 .metric-value { font-size: 1.8rem; font-weight: 800; }
 .metric-sub { font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem; }
@@ -149,6 +113,12 @@ textarea:focus { border-color: var(--accent); }
 .badge-repeat { background: var(--red-bg); color: var(--red-text); }
 .badge-clean { background: var(--green-bg); color: var(--green-text); }
 .badge-cliche { background: var(--yellow-bg); color: var(--yellow-text); }
+.badge-semantic { background: #f0f0ff; color: #4a4ae2; }
+.repeat-section { margin-bottom: 1.2rem; }
+.repeat-section-title {
+  font-size: 0.85rem; font-weight: 700; margin-bottom: 0.5rem;
+  padding-bottom: 0.3rem; border-bottom: 0.5px solid var(--border);
+}
 .repeat-pair {
   padding: 0.8rem 0; border-bottom: 0.5px solid var(--border);
 }
@@ -169,57 +139,50 @@ textarea:focus { border-color: var(--accent); }
   padding-bottom: 0.5rem; border-bottom: 0.5px solid var(--border);
 }
 .mb { margin-bottom: 0.75rem; }
+.spinner {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid var(--accent); border-top-color: transparent;
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+  margin-right: 6px; vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
 
 <h1>Metin Diligence Analizörü</h1>
-<p class="subtitle">Metninizi yapıştırın — Yapay Zeka, Tekrar ve Orijinallik skorları hesaplanır.</p>
+<p class="subtitle">Bir web sitesi URL'si girin — sayfadaki metin otomatik çekilip analiz edilir.</p>
 
-<textarea id="inputText" placeholder="Analiz edilecek metni buraya yapıştırın..."></textarea>
-<div class="btn-row">
-  <button class="btn btn-primary" onclick="analyze()">Analiz Et</button>
-  <button class="btn btn-secondary" onclick="loadSample()">Örnek Metin Yükle</button>
+<div class="input-row">
+  <input type="url" id="urlInput" placeholder="https://ornek.com/makale" />
+  <button class="btn btn-primary" id="analyzeBtn" onclick="fetchAndAnalyze()">Analiz Et</button>
 </div>
+<div class="status-bar" id="statusBar"></div>
+<div class="meta-info" id="metaInfo"></div>
 
 <div class="results" id="results">
-  <!-- Satır 1: 4 Metrik -->
   <div class="grid-4 mb" id="metricsRow"></div>
-
-  <!-- Satır 2: AI + Orijinallik -->
   <div class="grid-2 mb" id="scoreRow"></div>
-
-  <!-- Satır 3: Bulgular -->
   <div class="card mb">
     <div class="section-title">Tespit Edilen Bulgular</div>
     <div id="findings"></div>
   </div>
-
-  <!-- Satır 4: Tekrar Eden Cümleler -->
   <div class="card mb" id="repeatCard" style="display:none">
     <div class="section-title">Tekrar Eden Cümleler</div>
     <div id="repeats"></div>
   </div>
-
-  <!-- Satır 5: İşaretlenen İfadeler -->
   <div class="card mb" id="expressionsCard" style="display:none">
     <div class="section-title">İşaretlenen İfadeler</div>
     <div id="expressions"></div>
   </div>
-
-  <!-- Satır 6: Cümle Uzunluk Grafiği -->
   <div class="card mb">
     <div class="section-title">Cümle Uzunluk Dağılımı</div>
     <div class="chart-container"><canvas id="sentenceChart"></canvas></div>
   </div>
-
-  <!-- Satır 7: Kelime Frekans Grafiği -->
   <div class="card mb">
     <div class="section-title">En Sık 12 Kelime</div>
     <div class="chart-container"><canvas id="wordChart"></canvas></div>
   </div>
-
-  <!-- Satır 8: Özet Rapor -->
   <div class="card mb">
     <div class="section-title">Genel Rapor Özeti</div>
     <div class="summary-text" id="summary"></div>
@@ -228,6 +191,12 @@ textarea:focus { border-color: var(--accent); }
 
 <script>
 // ===================== SABITLER =====================
+const CORS_PROXIES = [
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+];
+
 const TR_CLICHES = [
   "sonuç olarak","bu bağlamda","öte yandan","vurgulamak gerekirse",
   "dikkat edilmesi gereken","şunu belirtmek gerekir","genel itibarıyla",
@@ -244,21 +213,21 @@ const STOPWORDS_TR = new Set([
   "bir","ve","veya","ile","de","da","ki","mi","mı","mu","mü","bu","şu","o",
   "için","gibi","kadar","daha","en","çok","az","pek","ama","fakat","ancak",
   "çünkü","eğer","yani","hem","ya","da","ise","idi","imi","imış","ecek","acak",
-  "olarak","üzere","diye","göre","rağmen","karşın","rağmen","doğru","başka",
+  "olarak","üzere","diye","göre","rağmen","karşın","doğru","başka",
   "sadece","yalnız","elbette","belki","galiba","bence","sana","ona","bize",
   "benden","senden","ondan","bizim","senin","onun","beni","seni","onu","bizi",
   "sizi","bana","burada","orada","şurada","nerede","nereye","neden","niçin",
-  "nasıl","hangi","kim","ne","kaç","her","hiç","bazı","bazen","bazı","birçok",
-  "birkaç","bazıları","bazılarının","tüm","hepsi","herkes","hiçbir","hiçbiri",
-  "şey","şeyler","şimdi","sonra","önce","sonra","zaten","artık","henüz","hâlâ",
+  "nasıl","hangi","kim","ne","kaç","her","hiç","bazı","bazen","birçok",
+  "birkaç","tüm","hepsi","herkes","hiçbir","hiçbiri",
+  "şey","şeyler","şimdi","sonra","önce","zaten","artık","henüz","hâlâ",
   "yine","yeni","sanki","madem","meğer","meğerse","halbuki","oysa","oysaki",
-  "ne","niye","niçin","nedeniyle","dolayı","nedenle","itibaren","itibariyle",
+  "niye","nedeniyle","dolayı","nedenle","itibaren","itibariyle",
   "kendi","kendisi","kendini","kendine","kendinde","kendinden","kendileri",
-  "ben","sen","biz","siz","onlar","bizim","bizim","bizde","bizden","bize",
+  "ben","sen","biz","siz","onlar","bizde","bizden","bize",
   "sende","senden","sana","sizde","sizden","size","onda","ondan","ona","onlar",
   "onlarda","onlardan","onlara","onları","onların","olan","oldu","olduğu",
   "olduğunu","olacak","olabilir","olması","olup","olur","olursa","olmadı",
-  "olmak","olmadığı","olmayan","olmayan","değil","var","yok","mı","mi","mu","mü"
+  "olmak","olmadığı","olmayan","değil","var","yok"
 ]);
 const STOPWORDS_EN = new Set([
   "the","a","an","is","are","was","were","be","been","being","have","has","had",
@@ -273,93 +242,37 @@ const STOPWORDS_EN = new Set([
   "their","what","which","who","whom","am"
 ]);
 
-let sentenceChartInstance = null;
-let wordChartInstance = null;
-
-// ===================== YARDIMCI FONKSİYONLAR =====================
-function getSentences(text) {
-  return text.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 3);
-}
-
-function getWords(text) {
-  return text.toLowerCase().replace(/[^\w\s]/g,'').split(/\s+/).filter(w => w.length > 0);
-}
-
-function getWordsFiltered(text, lang) {
-  const stops = lang === 'tr' ? STOPWORDS_TR : STOPWORDS_EN;
-  return getWords(text).filter(w => !stops.has(w) && w.length > 2);
-}
-
-function detectLang(text) {
-  const words = getWords(text);
-  let trCount = 0, enCount = 0;
-  words.forEach(w => {
-    if (/[çğıöşü]/.test(w)) trCount++;
-    else if (STOPWORDS_EN.has(w)) enCount++;
-  });
-  return trCount >= enCount ? 'tr' : 'en';
-}
-
-function jaccard(a, b) {
-  if (a.size === 0 && b.size === 0) return 0;
-  const inter = new Set([...a].filter(x => b.has(x)));
-  const union = new Set([...a, ...b]);
-  return inter.size / union.size;
-}
-
-function stdDev(arr) {
-  if (arr.length < 2) return 0;
-  const mean = arr.reduce((s,v) => s+v, 0) / arr.length;
-  return Math.sqrt(arr.reduce((s,v) => s + (v-mean)**2, 0) / arr.length);
-}
-
-function mean(arr) {
-  return arr.length === 0 ? 0 : arr.reduce((s,v) => s+v, 0) / arr.length;
-}
-
-function scoreColor(score) {
-  if (score > 60) return 'var(--red)';
-  if (score >= 30) return 'var(--yellow)';
-  return 'var(--green)';
-}
-
-function scoreClass(score) {
-  if (score > 60) return 'score-low';
-  if (score >= 30) return 'score-mid';
-  return 'score-high';
-}
-
-// ===================== EŞ ANLAMLI HARİTASI (Semantik Benzerlik) =====================
+// ===================== EŞ ANLAMLI HARİTASI =====================
 const SYNONYM_GROUPS = [
-  ["gelişmek","ilerlemek","büyümek","artmak","yükselmek","genişlemek","gelişim","ilerleme","büyüme","artış","yükseliş","genişleme","geliyor","ilerliyor","artıyor","yükseliyor","gelişti","ilerledi","arttı","yükseldi","gelişme","ilerleme"],
-  ["önemli","kritik","değerli","önem","kritik","değer","önemlidir","kritiktir","değerlidir","önemli bir","önemli rol","önemli derece"],
+  ["gelişmek","ilerlemek","büyümek","artmak","yükselmek","genişlemek","gelişim","ilerleme","büyüme","artış","yükseliş","genişleme","geliyor","ilerliyor","artıyor","yükseliyor","gelişti","ilerledi","arttı","yükseldi","gelişme","ilerleme","gelişmektedir","ilerlemektedir"],
+  ["önemli","kritik","değerli","önem","kritik","değer","önemlidir","kritiktir","değerlidir","önemli bir","önemli rol","önemli derece","önem arz","önem taşımaktadır"],
   ["büyük","geniş","kapsamlı","kocaman","devasa","büyüktür","geniştir","kapsamlıdır","büyük ölçüde"],
-  ["hız","çabukluk","sürat","hızlı","çabuk","süratli","hızla","çabucak","süratle","hızlıca","hızla gelişen"],
-  ["etki","tesir","etkilemek","etkisi","tesiri","etkiliyor","etkiledi","etkisinde","etkileri","etkisini","etkilemektedir"],
+  ["hız","çabukluk","sürat","hızlı","çabuk","süratli","hızla","çabucak","süratle","hızlıca","hızla gelişen","hız kesmeden"],
+  ["etki","tesir","etkilemek","etkisi","tesiri","etkiliyor","etkiledi","etkisinde","etkileri","etkisini","etkilemektedir","etkileri"],
   ["teknoloji","teknik","dijital","teknolojik","teknolojiler","teknikler","dijitalleşme","teknolojik gelişmeler"],
-  ["hayat","yaşam","günlük","yaşam","hayatı","yaşamı","hayatın","yaşamın","hayatımız","yaşamımız","hayatımızın","yaşamımıza"],
-  ["gelecek","ileride","ilerleyen","gelecekte","ileriki","geleceğin","ilerideki","gelecekteki"],
+  ["hayat","yaşam","günlük","yaşam","hayatı","yaşamı","hayatın","yaşamın","hayatımız","yaşamımız","hayatımızın","yaşamımıza","yaşam kalitesi"],
+  ["gelecek","ileride","ilerleyen","gelecekte","ileriki","geleceğin","ilerideki","gelecekteki","geleceğin"],
   ["alan","sektör","bölüm","dal","saha","sektöründe","alanında","bölümünde","alanlarda"],
-  ["gerekli","şart","lazım","önemli","zorunlu","gerekmektedir","gerekir","şarttır","gereklidir"],
+  ["gerekli","şart","lazım","önemli","zorunlu","gerekmektedir","gerekir","şarttır","gereklidir","gerekmektedir"],
   ["katkı","fayda","yarar","katkıda","fayda sağlar","yarar sağlar","katkı sağlar","faydalı","yararlı","katkıda bulunmak"],
   ["sorun","problem","zorluk","sıkıntı","mesele","sorunu","problemi","zorluğu","sorunlar","problemler","sorunları"],
   ["çözüm","çare","yol","çözümü","çözümüne","çözüm üretmek","çözüm bulmak","çözümler"],
-  ["artırmak","güçlendirmek","geliştirmek","artırılmalı","güçlendirilmeli","geliştirilmeli","artırılması","güçlendirilmesi","geliştirilmesi","artırmak","artırılmalıdır"],
-  ["kullanmak","yararlanmak","faydalanmak","kullanımı","kullanım","kullanılarak","yararlanılarak","kullanılmaktadır","kullanılmaya"],
-  ["sağlamak","temin etmek","sunmak","sağlar","sağlayan","sağladığı","sağlamaktadır","sağlamıştır","sunmaktadır","sunar","sağlaması"],
+  ["artırmak","güçlendirmek","geliştirmek","artırılmalı","güçlendirilmeli","geliştirilmeli","artırılması","güçlendirilmesi","geliştirilmesi","artırmak","artırılmalıdır","artırılması"],
+  ["kullanmak","yararlanmak","faydalanmak","kullanımı","kullanım","kullanılarak","yararlanılarak","kullanılmaktadır","kullanılmaya","kullanım alanı"],
+  ["sağlamak","temin etmek","sunmak","sağlar","sağlayan","sağladığı","sağlamaktadır","sağlamıştır","sunmaktadır","sunar","sağlaması","kolaylaştırmak"],
   ["göstermek","ortaya koymak","belirtmek","gösteriyor","gösterdi","ortaya koyuyor","belirtiyor","belirtti","göstermektedir","belirtmektedir","göstermektedir"],
-  ["yapmak","gerçekleştirmek","uygulamak","yapılıyor","gerçekleştiriliyor","yapıldı","gerçekleştirildi","yapılması","gerçekleştirilmesi","yapılmaktadır"],
+  ["yapmak","gerçekleştirmek","uygulamak","yapılıyor","gerçekleştiriliyor","yapıldı","gerçekleştirildi","yapılması","gerçekleştirilmesi","yapılmaktadır","yapılan"],
   ["düşünce","fikir","görüş","düşüncesi","fikri","görüşü","düşünceler","fikirler","görüşler"],
-  ["insan","birey","kişi","insanlar","bireyler","kişiler","insanın","bireyin","kişinin","insanlara"],
-  ["toplum","halk","kamuoyu","toplumsal","toplumun","halkın","toplumda","topluma","toplumlar"],
-  ["dünya","küresel","evrensel","dünyada","dünyanın","küresel düzeyde","dünya genelinde"],
+  ["insan","birey","kişi","insanlar","bireyler","kişiler","insanın","bireyin","kişinin","insanlara","insan hayatı","bireylerin"],
+  ["toplum","halk","kamuoyu","toplumsal","toplumun","halkın","toplumda","topluma","toplumlar","toplum üzerindeki"],
+  ["dünya","küresel","evrensel","dünyada","dünyanın","küresel düzeyde","dünya genelinde","günümüz dünyasında"],
   ["yeni","modern","güncel","yenilikçi","modernleşme","güncel olarak","yeni nesil"],
-  ["doğru","uygun","elverişli","doğru şekilde","uygun biçimde","doğru bir"],
-  ["devam etmek","sürdürmek","devam ediyor","sürdürüyor","devam edecektir","sürdürecektir","devam etmekte","sürdürmektedir","devam etmektedir"],
+  ["doğru","uygun","elverişli","doğru şekilde","uygun biçimde","doğru bir","doğru kullanımı"],
+  ["devam etmek","sürdürmek","devam ediyor","sürdürüyor","devam edecektir","sürdürecektir","devam etmekte","sürdürmektedir","devam etmektedir","devam edecektir"],
   ["risk","tehlike","tehdit","riski","tehlikesi","tehdidi","riskler","tehlikeler","riskleri"],
   ["avantaj","fırsat","imkan","avantajları","fırsatları","imkanları","avantaj sağlar","fırsat sunar","avantajları"],
   ["ihtiyaç","gereksinim","ihtiyaçları","gereksinimleri","ihtiyaç duyulan","gereksinim duyulan","ihtiyaç"],
-  ["araştırma","inceleme","çalışma","araştırmalar","incelemeler","çalışmalar","araştırması","incelemesi","çalışmaları"],
+  ["araştırma","inceleme","çalışma","araştırmalar","incelemeler","çalışmalar","araştırması","incelemesi","çalışmaları","çalışmaların"],
   ["sonuç","netice","bulgu","sonuçları","neticeleri","bulguları","sonucunda","neticesinde","sonuç olarak"],
   ["make","produce","create","generate","build","develop","making","producing","creating","generating","made","produced","created","generated"],
   ["important","significant","crucial","critical","essential","vital","key","major"],
@@ -382,7 +295,6 @@ function stemTr(word) {
     "ları","leri","ları","leri",
     "ımız","imiz","umuz","ümüz",
     "ınız","iniz","unuz","ünüz",
-    "ları","leri",
     "daki","deki",
     "dan","den","tan","ten",
     "da","de","ta","te",
@@ -447,11 +359,157 @@ function cosineSimilarity(vecA, vecB) {
   return dot / (Math.sqrt(magA) * Math.sqrt(magB));
 }
 
-// ===================== ANALİZ =====================
-function analyze() {
-  const text = document.getElementById('inputText').value.trim();
-  if (!text) return;
+let sentenceChartInstance = null;
+let wordChartInstance = null;
 
+// ===================== YARDIMCI FONKSİYONLAR =====================
+function getSentences(text) {
+  return text.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 3);
+}
+
+function getWords(text) {
+  return text.toLowerCase().replace(/[^\w\s]/g,'').split(/\s+/).filter(w => w.length > 0);
+}
+
+function getWordsFiltered(text, lang) {
+  const stops = lang === 'tr' ? STOPWORDS_TR : STOPWORDS_EN;
+  return getWords(text).filter(w => !stops.has(w) && w.length > 2);
+}
+
+function detectLang(text) {
+  const words = getWords(text);
+  let trCount = 0, enCount = 0;
+  words.forEach(w => {
+    if (/[çğıöşü]/.test(w)) trCount++;
+    else if (STOPWORDS_EN.has(w)) enCount++;
+  });
+  return trCount >= enCount ? 'tr' : 'en';
+}
+
+function jaccard(a, b) {
+  if (a.size === 0 && b.size === 0) return 0;
+  const inter = new Set([...a].filter(x => b.has(x)));
+  const union = new Set([...a, ...b]);
+  return inter.size / union.size;
+}
+
+function stdDev(arr) {
+  if (arr.length < 2) return 0;
+  const m = arr.reduce((s,v) => s+v, 0) / arr.length;
+  return Math.sqrt(arr.reduce((s,v) => s + (v-m)**2, 0) / arr.length);
+}
+
+function mean(arr) {
+  return arr.length === 0 ? 0 : arr.reduce((s,v) => s+v, 0) / arr.length;
+}
+
+function scoreColor(score) {
+  if (score > 60) return 'var(--red)';
+  if (score >= 30) return 'var(--yellow)';
+  return 'var(--green)';
+}
+
+function scoreClass(score) {
+  if (score > 60) return 'score-low';
+  if (score >= 30) return 'score-mid';
+  return 'score-high';
+}
+
+// ===================== WEB SCRAPING =====================
+async function fetchWithProxy(url) {
+  for (const proxyFn of CORS_PROXIES) {
+    try {
+      const proxyUrl = proxyFn(url);
+      const resp = await fetch(proxyUrl, { signal: AbortSignal.timeout(15000) });
+      if (!resp.ok) continue;
+      return await resp.text();
+    } catch(e) {
+      continue;
+    }
+  }
+  throw new Error("Tüm proxy sunucuları başarısız oldu.");
+}
+
+function extractCleanText(html) {
+  // Basit HTML parser: script, style, tag'leri temizle
+  let text = html;
+  // Script ve style bloklarını kaldır
+  text = text.replace(/<script[\s\S]*?<\/script>/gi, '');
+  text = text.replace(/<style[\s\S]*?<\/style>/gi, '');
+  text = text.replace(/<noscript[\s\S]*?<\/noscript>/gi, '');
+  // HTML tag'lerini kaldır
+  text = text.replace(/<[^>]+>/g, ' ');
+  // HTML entity'leri çöz
+  text = text.replace(/&nbsp;/g, ' ');
+  text = text.replace(/&amp;/g, '&');
+  text = text.replace(/&lt;/g, '<');
+  text = text.replace(/&gt;/g, '>');
+  text = text.replace(/&quot;/g, '"');
+  text = text.replace(/&#39;/g, "'");
+  text = text.replace(/&#[0-9]+;/g, ' ');
+  // Birden fazla boşluğu tek boşluğa indir
+  text = text.replace(/\s+/g, ' ');
+  // Satır sonlarını temizle
+  text = text.replace(/\n\s*\n/g, '\n\n');
+  return text.trim();
+}
+
+// ===================== DURUM BARI =====================
+function setStatus(msg, type) {
+  const bar = document.getElementById('statusBar');
+  bar.className = 'status-bar visible status-' + type;
+  bar.innerHTML = type === 'loading' ? `<span class="spinner"></span>${msg}` : msg;
+}
+
+function hideStatus() {
+  document.getElementById('statusBar').className = 'status-bar';
+}
+
+function setMetaInfo(msg) {
+  const el = document.getElementById('metaInfo');
+  el.className = 'meta-info visible';
+  el.textContent = msg;
+}
+
+// ===================== ANALİZ =====================
+async function fetchAndAnalyze() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) { setStatus('Lütfen bir URL girin.', 'error'); return; }
+
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  document.getElementById('results').classList.remove('visible');
+
+  setStatus('Web sayfası yükleniyor...', 'loading');
+
+  let html;
+  try {
+    html = await fetchWithProxy(url);
+  } catch(e) {
+    setStatus('Hata: ' + e.message, 'error');
+    btn.disabled = false;
+    return;
+  }
+
+  const text = extractCleanText(html);
+  if (text.length < 50) {
+    setStatus('Sayfadan yeterli metin çıkarılamadı (sadece ' + text.length + ' karakter).', 'error');
+    btn.disabled = false;
+    return;
+  }
+
+  setStatus('Metin çıkarıldı (' + text.length + ' karakter). Analiz yapılıyor...', 'loading');
+  setMetaInfo('URL: ' + url + ' | Çıkarılan metin: ' + text.length + ' karakter');
+
+  // Kısa bir gecikme ile analiz (UI güncellemesi için)
+  setTimeout(() => {
+    runAnalysis(text);
+    setStatus('Analiz tamamlandı.', 'success');
+    btn.disabled = false;
+  }, 100);
+}
+
+function runAnalysis(text) {
   const lang = detectLang(text);
   const sentences = getSentences(text);
   const allWords = getWords(text);
@@ -471,9 +529,7 @@ function analyze() {
   allCliches.forEach(c => {
     const regex = new RegExp(c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
     const matches = textLower.match(regex);
-    if (matches) {
-      matches.forEach(() => foundCliches.push(c));
-    }
+    if (matches) matches.forEach(() => foundCliches.push(c));
   });
 
   // 3. Pasif yapı
@@ -507,7 +563,7 @@ function analyze() {
   const avg = mean(sentLengths);
   const burstiness = avg > 0 ? sd / avg : 0;
 
-  // 9. Jaccard cümle benzerliği (kelime örtüşmesi)
+  // 9. Jaccard cümle benzerliği
   const sentWordSets = sentences.map(s => new Set(getWordsFiltered(s, lang)));
   const similarPairsJaccard = [];
   for (let i = 0; i < sentWordSets.length; i++) {
@@ -520,33 +576,24 @@ function analyze() {
   }
   similarPairsJaccard.sort((a,b) => b.sim - a.sim);
 
-  // 9b. Semantik benzerlik (aynı şeyi farklı kelimelerle anlatan cümleler)
+  // 9b. Semantik benzerlik
   const semanticPairs = [];
   for (let i = 0; i < sentences.length; i++) {
     for (let j = i + 1; j < sentences.length; j++) {
       const wordsA = getWordsFiltered(sentences[i], lang);
       const wordsB = getWordsFiltered(sentences[j], lang);
       if (wordsA.length < 2 || wordsB.length < 2) continue;
-
       const vecA = getSemanticVector(wordsA);
       const vecB = getSemanticVector(wordsB);
       const cosSim = cosineSimilarity(vecA, vecB);
-
       const jacSim = jaccard(sentWordSets[i], sentWordSets[j]);
-
       if (cosSim >= 0.30 && jacSim < 0.55) {
-        semanticPairs.push({
-          a: sentences[i],
-          b: sentences[j],
-          cosSim: cosSim,
-          jacSim: jacSim
-        });
+        semanticPairs.push({ a: sentences[i], b: sentences[j], cosSim: cosSim, jacSim: jacSim });
       }
     }
   }
   semanticPairs.sort((a,b) => b.cosSim - a.cosSim);
 
-  // Tüm benzer çiftleri birleştir (skorlama için)
   const allSimilarPairs = [...similarPairsJaccard, ...semanticPairs];
   allSimilarPairs.sort((a,b) => (b.sim || b.cosSim) - (a.sim || a.cosSim));
 
@@ -583,59 +630,39 @@ function analyze() {
 
   // ===================== BULGULAR =====================
   const findings = [];
-  if (foundCliches.length > 0) {
-    findings.push({ text: `${foundCliches.length} adet klişe ifade tespit edildi`, badge: 'Klişe' });
-  }
-  if (typoCount > 0) {
-    findings.push({ text: `${typoCount} adet tipografik karakter (em dash, akıllı tırnak vb.)`, badge: 'YZ İşareti' });
-  }
-  if (burstiness < 0.45) {
-    findings.push({ text: `Düşük cümle varyansı (burstiness: ${burstiness.toFixed(2)}) — monoton akış`, badge: 'YZ İşareti' });
-  }
-  if (passiveCount > 0) {
-    findings.push({ text: `${passiveCount} adet pasif yapı tespit edildi`, badge: 'YZ İşareti' });
-  }
-  if (listLines > 0) {
-    findings.push({ text: `${listLines} adet liste satırı`, badge: 'YZ İşareti' });
-  }
-  if (headingLines > 0) {
-    findings.push({ text: `${headingLines} adet markdown başlığı`, badge: 'YZ İşareti' });
-  }
-  if (similarPairsJaccard.length > 0) {
-    findings.push({ text: `${similarPairsJaccard.length} adet benzer cümle çifti (aynı kelimeler, >%55)`, badge: 'Tekrar' });
-  }
-  if (semanticPairs.length > 0) {
-    findings.push({ text: `${semanticPairs.length} adet anlamsal olarak benzer cümle (farklı kelimeler, aynı anlam)`, badge: 'Tekrar' });
-  }
-  if (repeatedTrigrams.length > 0) {
-    findings.push({ text: `${repeatedTrigrams.length} adet tekrar eden trigram`, badge: 'Tekrar' });
-  }
-  if (findings.length === 0) {
-    findings.push({ text: 'Önemli bir işaret tespit edilmedi', badge: 'Temiz' });
-  }
+  if (foundCliches.length > 0) findings.push({ text: foundCliches.length + ' adet klişe ifade tespit edildi', badge: 'Klişe' });
+  if (typoCount > 0) findings.push({ text: typoCount + ' adet tipografik karakter (em dash, akıllı tırnak vb.)', badge: 'YZ İşareti' });
+  if (burstiness < 0.45) findings.push({ text: 'Düşük cümle varyansı (burstiness: ' + burstiness.toFixed(2) + ') — monoton akış', badge: 'YZ İşareti' });
+  if (passiveCount > 0) findings.push({ text: passiveCount + ' adet pasif yapı tespit edildi', badge: 'YZ İşareti' });
+  if (listLines > 0) findings.push({ text: listLines + ' adet liste satırı', badge: 'YZ İşareti' });
+  if (headingLines > 0) findings.push({ text: headingLines + ' adet markdown başlığı', badge: 'YZ İşareti' });
+  if (similarPairsJaccard.length > 0) findings.push({ text: similarPairsJaccard.length + ' adet kelime bazlı tekrar (aynı kelimeler, >%55)', badge: 'Tekrar' });
+  if (semanticPairs.length > 0) findings.push({ text: semanticPairs.length + ' adet anlamsal tekrar (farklı kelimeler, aynı anlam)', badge: 'Tekrar' });
+  if (repeatedTrigrams.length > 0) findings.push({ text: repeatedTrigrams.length + ' adet tekrar eden trigram', badge: 'Tekrar' });
+  if (findings.length === 0) findings.push({ text: 'Önemli bir işaret tespit edilmedi', badge: 'Temiz' });
 
-  // ===================== ÖZET RAPOR =====================
+  // ===================== ÖZET =====================
   let summary = '';
-  summary += `Metin ${allWords.length} kelime ve ${sentences.length} cümleden oluşmaktadır. `;
-  summary += `Sözcük çeşitliliği (TTR) %${(ttr*100).toFixed(1)} olarak hesaplanmıştır. `;
+  summary += 'Metin ' + allWords.length + ' kelime ve ' + sentences.length + ' cümleden oluşmaktadır. ';
+  summary += 'Sözcük çeşitliliği (TTR) %' + (ttr*100).toFixed(1) + ' olarak hesaplanmıştır. ';
   if (aiScore > 60) {
-    summary += `Yapay Zeka skoru yüksek (${aiScore}/100) çıkmıştır. `;
-    if (foundCliches.length > 0) summary += `${foundCliches.length} klişe ifade, `;
+    summary += 'Yapay Zeka skoru yüksek (' + aiScore + '/100) çıkmıştır. ';
+    if (foundCliches.length > 0) summary += foundCliches.length + ' klişe ifade, ';
     if (burstiness < 0.45) summary += 'monoton cümle akışı, ';
     if (passiveCount > 2) summary += 'yoğun pasif yapı kullanımı, ';
     summary = summary.replace(/, $/,'');
     summary += '. Bu bulgular metnin yapay zeka tarafından üretilmiş olabileceğini düşündürmektedir. ';
   } else if (aiScore >= 30) {
-    summary += `Yapay Zeka skoru orta seviyededir (${aiScore}/100). Bazı YZ işaretleri bulunmakla birlikte kesin bir yargı zordur. `;
+    summary += 'Yapay Zeka skoru orta seviyededir (' + aiScore + '/100). Bazı YZ işaretleri bulunmakla birlikte kesin bir yargı zordur. ';
   } else {
-    summary += `Yapay Zeka skoru düşük (${aiScore}/100). Metin büyük olasılıkla insan tarafından yazılmıştır. `;
+    summary += 'Yapay Zeka skoru düşük (' + aiScore + '/100). Metin büyük olasılıkla insan tarafından yazılmıştır. ';
   }
   if (repeatScore > 40) {
-    summary += `Tekrar skoru yüksektir (${repeatScore}/100). ${similarPairsJaccard.length} kelime bazlı tekrar, ${semanticPairs.length} anlamsal tekrar ve ${repeatedTrigrams.length} tekrar eden trigram tespit edilmiştir. `;
+    summary += 'Tekrar skoru yüksektir (' + repeatScore + '/100). ' + similarPairsJaccard.length + ' kelime bazlı tekrar, ' + semanticPairs.length + ' anlamsal tekrar ve ' + repeatedTrigrams.length + ' tekrar eden trigram tespit edilmiştir. ';
   }
-  summary += `Orijinallik skoru ${originalityScore.toFixed(0)}/100 olarak hesaplanmıştır.`;
+  summary += 'Orijinallik skoru ' + originalityScore.toFixed(0) + '/100 olarak hesaplanmıştır.';
 
-  // ===================== ARAYÜZE YAZDIRMA =====================
+  // ===================== RENDER =====================
   renderMetrics(allWords.length, sentences.length, ttr, burstiness);
   renderScores(aiScore, repeatScore, originalityScore, foundCliches, typoCount, listLines, passiveCount, allSimilarPairs, repeatedTrigrams, burstiness);
   renderFindings(findings);
@@ -643,145 +670,80 @@ function analyze() {
   renderExpressions(foundCliches, repeatedTrigrams);
   renderCharts(sentLengths, filteredWords);
   renderSummary(summary);
-
   document.getElementById('results').classList.add('visible');
 }
 
+// ===================== RENDER FONKSİYONLARI =====================
 function renderMetrics(wordCount, sentCount, ttr, burstiness) {
-  document.getElementById('metricsRow').innerHTML = `
-    <div class="card">
-      <div class="card-title">Kelime Sayısı</div>
-      <div class="metric-value">${wordCount}</div>
-    </div>
-    <div class="card">
-      <div class="card-title">Cümle Sayısı</div>
-      <div class="metric-value">${sentCount}</div>
-    </div>
-    <div class="card">
-      <div class="card-title">Sözcük Çeşitliliği (TTR)</div>
-      <div class="metric-value">${(ttr*100).toFixed(1)}%</div>
-      <div class="metric-sub">${ttr > 0.65 ? 'Zengin' : ttr > 0.45 ? 'Orta' : 'Düşük'} kelime çeşitliliği</div>
-    </div>
-    <div class="card">
-      <div class="card-title">Cümle Varyansı</div>
-      <div class="metric-value">${burstiness.toFixed(2)}</div>
-      <div class="metric-sub">${burstiness < 0.45 ? 'Monoton (YZ işareti)' : 'Çeşitli (İnsan işareti)'}</div>
-    </div>
-  `;
+  document.getElementById('metricsRow').innerHTML =
+    '<div class="card"><div class="card-title">Kelime Sayısı</div><div class="metric-value">' + wordCount + '</div></div>' +
+    '<div class="card"><div class="card-title">Cümle Sayısı</div><div class="metric-value">' + sentCount + '</div></div>' +
+    '<div class="card"><div class="card-title">Sözcük Çeşitliliği (TTR)</div><div class="metric-value">' + (ttr*100).toFixed(1) + '%</div><div class="metric-sub">' + (ttr > 0.65 ? 'Zengin' : ttr > 0.45 ? 'Orta' : 'Düşük') + ' kelime çeşitliliği</div></div>' +
+    '<div class="card"><div class="card-title">Cümle Varyansı</div><div class="metric-value">' + burstiness.toFixed(2) + '</div><div class="metric-sub">' + (burstiness < 0.45 ? 'Monoton (YZ işareti)' : 'Çeşitli (İnsan işareti)') + '</div></div>';
 }
 
 function renderScores(ai, repeat, originality, cliches, typos, lists, passives, pairs, trigrams, burst) {
-  const aiColor = scoreColor(ai);
-  const origColor = scoreColor(originality);
-
-  // AI gauge items
   const clichPct = cliches.length >= 3 ? 100 : cliches.length >= 1 ? 50 : 0;
   const typoPct = typos >= 3 ? 100 : typos >= 1 ? 40 : 0;
   const listPct = lists > 3 ? 100 : lists > 0 ? 33 : 0;
   const passPct = passives > 2 ? 100 : passives > 0 ? 50 : 0;
-
-  // Orig gauge items
   const simPct = pairs.length > 0 ? Math.min(pairs.length * 25, 100) : 0;
   const trigPct = trigrams.length > 3 ? Math.min((trigrams.length-3)*20, 100) : 0;
   const varPct = burst < 0.45 ? 80 : burst < 0.7 ? 40 : 10;
 
-  document.getElementById('scoreRow').innerHTML = `
-    <div class="card">
-      <div class="card-title">Yapay Zeka Skoru</div>
-      <div class="metric-value ${scoreClass(ai)}">${ai}</div>
-      <div class="metric-sub">${ai > 60 ? 'Yüksek YZ olasılığı' : ai >= 30 ? 'Orta seviye' : 'Düşük olasılık'}</div>
-      <div class="gauge-row">
-        <div class="gauge-item">
-          <span class="gauge-label">Klişeler</span>
-          <div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:${clichPct}%;background:var(--yellow)"></div></div>
-          <span class="gauge-val">${cliches.length}</span>
-        </div>
-        <div class="gauge-item">
-          <span class="gauge-label">Tipografik</span>
-          <div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:${typoPct}%;background:var(--accent)"></div></div>
-          <span class="gauge-val">${typos}</span>
-        </div>
-        <div class="gauge-item">
-          <span class="gauge-label">Liste</span>
-          <div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:${listPct}%;background:var(--green)"></div></div>
-          <span class="gauge-val">${lists}</span>
-        </div>
-        <div class="gauge-item">
-          <span class="gauge-label">Pasif Yapı</span>
-          <div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:${passPct}%;background:var(--red)"></div></div>
-          <span class="gauge-val">${passives}</span>
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title">Orijinallik Skoru</div>
-      <div class="metric-value ${scoreClass(originality)}">${originality.toFixed(0)}</div>
-      <div class="metric-sub">${originality > 60 ? 'Yüksek orijinallik' : originality >= 30 ? 'Orta seviye' : 'Düşük orijinallik'}</div>
-      <div class="gauge-row">
-        <div class="gauge-item">
-          <span class="gauge-label">Benzer Cümle</span>
-          <div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:${simPct}%;background:var(--red)"></div></div>
-          <span class="gauge-val">${pairs.length}</span>
-        </div>
-        <div class="gauge-item">
-          <span class="gauge-label">Trigram</span>
-          <div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:${trigPct}%;background:var(--red)"></div></div>
-          <span class="gauge-val">${trigrams.length}</span>
-        </div>
-        <div class="gauge-item">
-          <span class="gauge-label">Varyans</span>
-          <div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:${varPct}%;background:var(--accent)"></div></div>
-          <span class="gauge-val">${burst.toFixed(2)}</span>
-        </div>
-      </div>
-    </div>
-  `;
+  document.getElementById('scoreRow').innerHTML =
+    '<div class="card">' +
+      '<div class="card-title">Yapay Zeka Skoru</div>' +
+      '<div class="metric-value ' + scoreClass(ai) + '">' + ai + '</div>' +
+      '<div class="metric-sub">' + (ai > 60 ? 'Yüksek YZ olasılığı' : ai >= 30 ? 'Orta seviye' : 'Düşük olasılık') + '</div>' +
+      '<div class="gauge-row">' +
+        '<div class="gauge-item"><span class="gauge-label">Klişeler</span><div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:' + clichPct + '%;background:var(--yellow)"></div></div><span class="gauge-val">' + cliches.length + '</span></div>' +
+        '<div class="gauge-item"><span class="gauge-label">Tipografik</span><div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:' + typoPct + '%;background:var(--accent)"></div></div><span class="gauge-val">' + typos + '</span></div>' +
+        '<div class="gauge-item"><span class="gauge-label">Liste</span><div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:' + listPct + '%;background:var(--green)"></div></div><span class="gauge-val">' + lists + '</span></div>' +
+        '<div class="gauge-item"><span class="gauge-label">Pasif Yapı</span><div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:' + passPct + '%;background:var(--red)"></div></div><span class="gauge-val">' + passives + '</span></div>' +
+      '</div></div>' +
+    '<div class="card">' +
+      '<div class="card-title">Orijinallik Skoru</div>' +
+      '<div class="metric-value ' + scoreClass(originality) + '">' + originality.toFixed(0) + '</div>' +
+      '<div class="metric-sub">' + (originality > 60 ? 'Yüksek orijinallik' : originality >= 30 ? 'Orta seviye' : 'Düşük orijinallik') + '</div>' +
+      '<div class="gauge-row">' +
+        '<div class="gauge-item"><span class="gauge-label">Benzer Cümle</span><div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:' + simPct + '%;background:var(--red)"></div></div><span class="gauge-val">' + pairs.length + '</span></div>' +
+        '<div class="gauge-item"><span class="gauge-label">Trigram</span><div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:' + trigPct + '%;background:var(--red)"></div></div><span class="gauge-val">' + trigrams.length + '</span></div>' +
+        '<div class="gauge-item"><span class="gauge-label">Varyans</span><div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:' + varPct + '%;background:var(--accent)"></div></div><span class="gauge-val">' + burst.toFixed(2) + '</span></div>' +
+      '</div></div>';
 }
 
 function renderFindings(findings) {
   document.getElementById('findings').innerHTML = findings.map(f => {
-    const badgeClass = f.badge === 'YZ İşareti' ? 'badge-ai' : f.badge === 'Tekrar' ? 'badge-repeat' : 'badge-clean';
-    return `<div class="finding-row">
-      <span class="finding-text">${f.text}</span>
-      <span class="badge ${badgeClass}">${f.badge}</span>
-    </div>`;
+    const bc = f.badge === 'YZ İşareti' ? 'badge-ai' : f.badge === 'Tekrar' ? 'badge-repeat' : f.badge === 'Klişe' ? 'badge-cliche' : 'badge-clean';
+    return '<div class="finding-row"><span class="finding-text">' + f.text + '</span><span class="badge ' + bc + '">' + f.badge + '</span></div>';
   }).join('');
 }
 
 function renderRepeats(jaccardPairs, semanticPairs) {
   const card = document.getElementById('repeatCard');
-  const totalPairs = jaccardPairs.length + semanticPairs.length;
-  if (totalPairs === 0) { card.style.display = 'none'; return; }
+  const total = jaccardPairs.length + semanticPairs.length;
+  if (total === 0) { card.style.display = 'none'; return; }
   card.style.display = 'block';
-
   let html = '';
-
-  // Jaccard tekrarları (aynı kelimeler)
   if (jaccardPairs.length > 0) {
-    html += '<div style="margin-bottom:1rem"><strong style="font-size:0.85rem;color:var(--red)">🔴 Aynı Kelimelerle Tekrar (' + jaccardPairs.length + ' çift)</strong></div>';
+    html += '<div class="repeat-section"><div class="repeat-section-title" style="color:var(--red)">🔴 Aynı Kelimelerle Tekrar (' + jaccardPairs.length + ' çift)</div>';
     jaccardPairs.slice(0, 20).forEach((p, i) => {
       const pct = Math.round(p.sim * 100);
-      html += `<div class="repeat-pair">
-        <div class="repeat-pct" style="color:${scoreColor(pct)}">%${pct} Kelime Örtüşmesi — Çift #${i+1}</div>
-        <div class="repeat-sent">"${p.a}"</div>
-        <div class="repeat-sent">"${p.b}"</div>
-      </div>`;
+      html += '<div class="repeat-pair"><div class="repeat-pct" style="color:' + scoreColor(pct) + '">% ' + pct + ' Kelime Örtüşmesi</div>' +
+        '<div class="repeat-sent">"' + p.a + '"</div><div class="repeat-sent">"' + p.b + '"</div></div>';
     });
+    html += '</div>';
   }
-
-  // Semantik tekrarlar (farklı kelimeler, aynı anlam)
   if (semanticPairs.length > 0) {
-    html += '<div style="margin-bottom:1rem;margin-top:1rem"><strong style="font-size:0.85rem;color:var(--yellow)">🟡 Farklı Kelimelerle Aynı Anlam (' + semanticPairs.length + ' çift)</strong></div>';
+    html += '<div class="repeat-section"><div class="repeat-section-title" style="color:var(--yellow)">🟡 Farklı Kelimelerle Aynı Anlam (' + semanticPairs.length + ' çift)</div>';
     semanticPairs.slice(0, 20).forEach((p, i) => {
       const pct = Math.round(p.cosSim * 100);
-      html += `<div class="repeat-pair">
-        <div class="repeat-pct" style="color:${scoreColor(pct)}">%${pct} Anlamsal Benzerlik — Çift #${i+1}</div>
-        <div class="repeat-sent">"${p.a}"</div>
-        <div class="repeat-sent">"${p.b}"</div>
-      </div>`;
+      html += '<div class="repeat-pair"><div class="repeat-pct" style="color:' + scoreColor(pct) + '">% ' + pct + ' Anlamsal Benzerlik</div>' +
+        '<div class="repeat-sent">"' + p.a + '"</div><div class="repeat-sent">"' + p.b + '"</div></div>';
     });
+    html += '</div>';
   }
-
   document.getElementById('repeats').innerHTML = html;
 }
 
@@ -792,22 +754,18 @@ function renderExpressions(cliches, trigrams) {
   let html = '';
   if (cliches.length > 0) {
     html += '<div style="margin-bottom:0.8rem"><strong style="font-size:0.85rem;color:var(--text-secondary)">Klişe İfadeler:</strong><div class="pill-container" style="margin-top:0.4rem">';
-    const unique = [...new Set(cliches)];
-    unique.forEach(c => { html += `<span class="pill pill-cliche">${c}</span>`; });
+    [...new Set(cliches)].forEach(c => { html += '<span class="pill pill-cliche">' + c + '</span>'; });
     html += '</div></div>';
   }
   if (trigrams.length > 0) {
     html += '<div><strong style="font-size:0.85rem;color:var(--text-secondary)">Tekrar Eden Trigramlar:</strong><div class="pill-container" style="margin-top:0.4rem">';
-    trigrams.slice(0,20).forEach(([tri, count]) => {
-      html += `<span class="pill pill-trigram">${tri} (${count}×)</span>`;
-    });
+    trigrams.slice(0,20).forEach(([tri, count]) => { html += '<span class="pill pill-trigram">' + tri + ' (' + count + '×)</span>'; });
     html += '</div></div>';
   }
   document.getElementById('expressions').innerHTML = html;
 }
 
 function renderCharts(sentLengths, filteredWords) {
-  // Cümle uzunluk dağılımı
   const buckets = {'1-5':0,'6-10':0,'11-20':0,'21-35':0,'35+':0};
   sentLengths.forEach(l => {
     if (l <= 5) buckets['1-5']++;
@@ -816,72 +774,26 @@ function renderCharts(sentLengths, filteredWords) {
     else if (l <= 35) buckets['21-35']++;
     else buckets['35+']++;
   });
-
   if (sentenceChartInstance) sentenceChartInstance.destroy();
-  const ctx1 = document.getElementById('sentenceChart').getContext('2d');
-  sentenceChartInstance = new Chart(ctx1, {
+  sentenceChartInstance = new Chart(document.getElementById('sentenceChart').getContext('2d'), {
     type: 'bar',
-    data: {
-      labels: Object.keys(buckets),
-      datasets: [{
-        label: 'Cümle Sayısı',
-        data: Object.values(buckets),
-        backgroundColor: ['#639922','#8bc34a','#EF9F27','#f59e0b','#E24B4A'],
-        borderRadius: 4
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-    }
+    data: { labels: Object.keys(buckets), datasets: [{ label: 'Cümle Sayısı', data: Object.values(buckets), backgroundColor: ['#639922','#8bc34a','#EF9F27','#f59e0b','#E24B4A'], borderRadius: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
   });
 
-  // Kelime frekansı
   const wordCounts = {};
   filteredWords.forEach(w => { wordCounts[w] = (wordCounts[w]||0) + 1; });
   const top12 = Object.entries(wordCounts).sort((a,b) => b[1]-a[1]).slice(0,12);
-
   if (wordChartInstance) wordChartInstance.destroy();
-  const ctx2 = document.getElementById('wordChart').getContext('2d');
-  wordChartInstance = new Chart(ctx2, {
+  wordChartInstance = new Chart(document.getElementById('wordChart').getContext('2d'), {
     type: 'bar',
-    data: {
-      labels: top12.map(([w]) => w),
-      datasets: [{
-        label: 'Tekrar Sayısı',
-        data: top12.map(([,c]) => c),
-        backgroundColor: '#6366f1',
-        borderRadius: 4
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
-      plugins: { legend: { display: false } },
-      scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }
-    }
+    data: { labels: top12.map(([w]) => w), datasets: [{ label: 'Tekrar Sayısı', data: top12.map(([,c]) => c), backgroundColor: '#6366f1', borderRadius: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } } }
   });
 }
 
 function renderSummary(text) {
   document.getElementById('summary').textContent = text;
-}
-
-// ===================== ÖRNEK METİN =====================
-function loadSample() {
-  document.getElementById('inputText').value = `Yapay zeka teknolojileri günümüz dünyasında büyük bir hızla gelişmektedir. Bu bağlamda, yapay zekanın önemi her geçen gün daha da artmaktadır. Öte yandan, yapay zeka teknolojilerinin toplum üzerindeki etkileri de göz ardı edilmemelidir.
-
-Sonuç olarak, yapay zeka teknolojileri hayatımızın her alanında önemli bir rol oynamaktadır. Şunu belirtmek gerekir ki, yapay zeka teknolojileri gelecekte de önemini korumaya devam edecektir. Bu doğrultuda, yapay zeka alanında yapılan çalışmaların artırılması önemle vurgulanmalıdır.
-
-Yapay zeka teknolojileri günümüz dünyasında büyük bir hızla gelişmektedir. Bu bağlamda, yapay zekanın toplum üzerindeki etkileri göz ardı edilmemelidir. Genel itibarıyla, yapay zeka teknolojileri büyük bir önem arz etmektedir.
-
-Dikkat edilmesi gereken en önemli husus, yapay zeka teknolojilerinin etik boyutudur. Vurgulamak gerekirse, yapay zeka teknolojileri insan hayatını kolaylaştırmak için geliştirilmiştir. Bu bağlamda, yapay zeka teknolojilerinin doğru kullanılması büyük önem arz etmektedir.
-
-Sonuç olarak, yapay zeka teknolojileri geleceğin en önemli alanlarından biri olmaya devam edecektir. Öte yandan, yapay zeka teknolojilerinin gelişimi hız kesmeden devam edecektir. Bu doğrultuda, yapay zeka alanında yapılan yatırımların artırılması gerekmektedir.
-
-Dijital araçların yaygınlaşmasıyla birlikte makine öğrenimi uygulamaları da geniş bir kullanım alanı bulmaktadır. Bu sayede, otomasyon sistemleri günlük yaşamımızı kolaylaştırmaya devam etmektedir.
-
-Yapay zeka sistemleri insanların yaşam kalitesini yükseltmek amacıyla tasarlanmaktadır. Bu teknolojiler sayesinde bireylerin hayatı daha pratik ve verimli hale gelmektedir.`;
 }
 </script>
 </body>
