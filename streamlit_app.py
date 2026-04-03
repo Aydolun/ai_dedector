@@ -791,8 +791,9 @@ def analyze_sentence_similarity(text):
         words = set(get_words(s, include_stopwords=False))
         sentence_word_sets.append(words)
 
-    # İkili benzerlik hesapla (Jaccard similarity)
+    # İkili benzerlik hesapla (Jaccard similarity + overlap ratio)
     similar_pairs = []
+    repeated_pairs = []  # %50+ benzerlik = TEKRAR
     n = len(sentences)
 
     for i in range(n):
@@ -818,40 +819,46 @@ def analyze_sentence_similarity(text):
             # Ortak kelimeler
             common_words = set_a & set_b
 
-            if jaccard >= 0.15 or overlap_ratio >= 0.3:
-                similar_pairs.append(
-                    {
-                        "sentence_a": sentences[i][:150]
-                        + ("..." if len(sentences[i]) > 150 else ""),
-                        "sentence_b": sentences[j][:150]
-                        + ("..." if len(sentences[j]) > 150 else ""),
-                        "jaccard": round(jaccard, 3),
-                        "overlap_ratio": round(overlap_ratio, 3),
-                        "common_words": ", ".join(list(common_words)[:10]),
-                        "common_count": len(common_words),
-                    }
-                )
+            pair_data = {
+                "sentence_a": sentences[i],
+                "sentence_b": sentences[j],
+                "sentence_a_short": sentences[i][:150]
+                + ("..." if len(sentences[i]) > 150 else ""),
+                "sentence_b_short": sentences[j][:150]
+                + ("..." if len(sentences[j]) > 150 else ""),
+                "jaccard": round(jaccard, 3),
+                "overlap_ratio": round(overlap_ratio, 3),
+                "common_words": ", ".join(list(common_words)[:10]),
+                "common_count": len(common_words),
+            }
+
+            # %50+ benzerlik = TEKRAR (aynı şeyi söylüyor)
+            if overlap_ratio >= 0.50 or jaccard >= 0.30:
+                repeated_pairs.append(pair_data)
+            elif jaccard >= 0.15 or overlap_ratio >= 0.30:
+                similar_pairs.append(pair_data)
 
     # Benzerliklere göre sırala
+    repeated_pairs.sort(key=lambda x: x["jaccard"], reverse=True)
     similar_pairs.sort(key=lambda x: x["jaccard"], reverse=True)
 
     # Tekrar oranı
     total_pairs = n * (n - 1) // 2
-    highly_similar = sum(1 for p in similar_pairs if p["jaccard"] >= 0.25)
-    moderately_similar = sum(1 for p in similar_pairs if 0.15 <= p["jaccard"] < 0.25)
+    total_similar = len(repeated_pairs) + len(similar_pairs)
 
     # Benzersizlik skoru
     if total_pairs > 0:
-        similarity_rate = len(similar_pairs) / total_pairs
+        similarity_rate = total_similar / total_pairs
         uniqueness_score = max(0, round((1 - similarity_rate) * 100, 1))
     else:
         uniqueness_score = 100
 
     return {
-        "similar_pairs": similar_pairs[:30],  # En fazla 30 çift göster
+        "repeated_pairs": repeated_pairs[:50],  # TEKRAR olanlar
+        "similar_pairs": similar_pairs[:30],  # Benzer olanlar
+        "total_repeated": len(repeated_pairs),
         "total_similar_pairs": len(similar_pairs),
-        "highly_similar": highly_similar,
-        "moderately_similar": moderately_similar,
+        "total_similar": total_similar,
         "total_comparisons": total_pairs,
         "uniqueness_score": uniqueness_score,
     }
@@ -1331,7 +1338,7 @@ if analyze_button:
                     )
                 with s3:
                     st.metric(
-                        "Benzer Cümle Çifti", f"{sentence_sim['total_similar_pairs']}"
+                        "Tekrar Eden Cümle", f"{sentence_sim['total_repeated']}"
                     )
                 with s4:
                     st.metric(
@@ -1352,7 +1359,50 @@ if analyze_button:
 
                 st.markdown("---")
 
-                # Benzer cümle çiftleri
+                # TEKRAR EDEN CÜMLELER (%50+ benzerlik)
+                st.subheader("TEKRAR Eden Cümleler")
+
+                if sentence_sim["total_repeated"] > 0:
+                    st.warning(
+                        f"**{sentence_sim['total_repeated']} adet tekrar eden cümle çifti bulundu.** "
+                        f"Bu cümleler birbirine %50 veya daha fazla benzerlik gösteriyor, "
+                        f"yani aynı veya çok benzer fikirleri ifade ediyorlar."
+                    )
+
+                    for idx, pair in enumerate(sentence_sim["repeated_pairs"][:30]):
+                        similarity_pct = int(pair["overlap_ratio"] * 100)
+                        jaccard_pct = int(pair["jaccard"] * 100)
+
+                        with st.container(border=True):
+                            st.markdown(
+                                f"🔴 **TEKRAR #{idx + 1}** — "
+                                f"Benzerlik: **%{similarity_pct}** | "
+                                f"Jaccard: %{jaccard_pct} | "
+                                f"Ortak Kelime: {pair['common_count']}"
+                            )
+                            col_a, col_b = st.columns(2)
+                            with col_a:
+                                st.markdown(f"**Cümle A:**")
+                                st.info(pair["sentence_a"])
+                            with col_b:
+                                st.markdown(f"**Cümle B:**")
+                                st.info(pair["sentence_b"])
+                            st.caption(f"Ortak kelimeler: {pair['common_words']}")
+
+                    if sentence_sim["total_repeated"] > 30:
+                        st.info(
+                            f"Toplam {sentence_sim['total_repeated']} tekrar çifti bulundu. "
+                            f"En belirgin 30 çift yukarıda gösteriliyor."
+                        )
+                else:
+                    st.success(
+                        "Hiçbir cümle çifti arasında %50+ benzerlik bulunamadı. "
+                        "İçerikte tekrar eden cümle yok."
+                    )
+
+                st.markdown("---")
+
+                # Benzer cümle çiftleri (%15-49 arası)
                 st.subheader("Birbirine Benzer Cümle Çiftleri")
 
                 if sentence_sim["similar_pairs"]:
@@ -1360,32 +1410,28 @@ if analyze_button:
                         similarity_pct = int(pair["jaccard"] * 100)
                         overlap_pct = int(pair["overlap_ratio"] * 100)
 
-                        if similarity_pct >= 25:
-                            badge = "🔴 Yüksek Benzerlik"
-                        elif similarity_pct >= 15:
-                            badge = "🟡 Orta Benzerlik"
-                        else:
-                            badge = "🟢 Düşük Benzerlik"
-
                         with st.container(border=True):
                             st.markdown(
-                                f"**{badge}** — Benzerlik: %{similarity_pct} | Ortak Kelime: {pair['common_count']}"
+                                f"🟡 **Benzerlik #{idx + 1}** — "
+                                f"Benzerlik: **%{overlap_pct}** | "
+                                f"Ortak Kelime: {pair['common_count']}"
                             )
                             col_a, col_b = st.columns(2)
                             with col_a:
-                                st.caption(f"Cümle A: {pair['sentence_a']}")
+                                st.caption(f"Cümle A: {pair['sentence_a_short']}")
                             with col_b:
-                                st.caption(f"Cümle B: {pair['sentence_b']}")
+                                st.caption(f"Cümle B: {pair['sentence_b_short']}")
                             st.caption(f"Ortak kelimeler: {pair['common_words']}")
 
                     if sentence_sim["total_similar_pairs"] > 15:
                         st.info(
                             f"Toplam {sentence_sim['total_similar_pairs']} benzer çift bulundu. "
-                            f"En belirgin {min(15, sentence_sim['total_similar_pairs'])} çift yukarıda gösteriliyor."
+                            f"En belirgin 15 çift yukarıda gösteriliyor."
                         )
                 else:
                     st.success(
-                        "Hiçbir cümle çifti arasında anlamlı benzerlik bulunamadı. İçerik oldukça benzersiz."
+                        "Düşük seviyede benzerlik gösteren cümle çifti de bulunamadı. "
+                        "İçerik oldukça benzersiz."
                     )
 
                 st.markdown("---")
@@ -1396,6 +1442,7 @@ if analyze_button:
                     f"Cümle uzunluklarının standart sapması: **{sentence_struct['std_length']}**. "
                     f"Bu değer ne kadar yüksekse, cümleler o kadar çeşitli uzunluklarda demektir. "
                     f"Çeşitlilik skoru: **{sentence_struct['variety_score']}/100**"
+                )"
                 )
 
             # --------------------------------------------------------
