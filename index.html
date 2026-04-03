@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Metin Diligence Analizörü</title>
+<title>SEO İçerik Emek & Kalite Analizörü</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
 :root {
@@ -40,14 +40,14 @@ body {
 .container { max-width: 1080px; margin: 0 auto; padding: 2rem 1.25rem; }
 
 /* HEADER */
-.header { text-align: center; padding: 2.5rem 0 2rem; }
+.header { text-align: center; padding: 3rem 0 2.5rem; }
 .header h1 {
-  font-size: 2rem; font-weight: 800; margin-bottom: 0.4rem;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  font-size: 2.5rem; font-weight: 800; margin-bottom: 0.8rem;
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 50%, #7c3aed 100%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   letter-spacing: -0.02em;
 }
-.header p { color: var(--text-secondary); font-size: 0.95rem; max-width: 500px; margin: 0 auto; }
+.header p { color: var(--text-secondary); font-size: 1.1rem; max-width: 600px; margin: 0 auto; line-height: 1.6; }
 
 /* INPUT */
 .input-card {
@@ -73,10 +73,10 @@ body {
 .btn:hover { transform: translateY(-1px); }
 .btn:active { transform: translateY(0); }
 .btn-primary {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: #fff; box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  color: #fff; box-shadow: 0 2px 8px rgba(37,99,235,0.3);
 }
-.btn-primary:hover { box-shadow: 0 4px 16px rgba(99,102,241,0.4); }
+.btn-primary:hover { box-shadow: 0 4px 16px rgba(37,99,235,0.4); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 .btn-sm { padding: 0.5rem 1rem; font-size: 0.8rem; }
 .btn-outline {
@@ -117,14 +117,19 @@ body {
 
 /* SCORE HERO */
 .score-hero {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
-  margin-bottom: 1.5rem;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;
+  margin-bottom: 2.5rem;
 }
 @media (max-width: 640px) { .score-hero { grid-template-columns: 1fr; } }
 .score-card {
-  background: var(--bg-card); border: 0.5px solid var(--border);
-  border-radius: var(--radius); padding: 1.5rem; text-align: center;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 2rem 1.5rem; text-align: center;
   box-shadow: var(--shadow); position: relative; overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.score-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
 }
 .score-card::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0;
@@ -153,15 +158,25 @@ body {
 
 /* METRICS ROW */
 .metrics-row {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;
-  margin-bottom: 1.5rem;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
+  margin-bottom: 2rem;
 }
 @media (max-width: 768px) { .metrics-row { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 480px) { .metrics-row { grid-template-columns: 1fr 1fr; } }
 .metric-card {
-  background: var(--bg-card); border: 0.5px solid var(--border);
-  border-radius: var(--radius-sm); padding: 1rem; box-shadow: var(--shadow);
-  display: flex; align-items: center; gap: 0.75rem;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--shadow);
+  display: flex; align-items: center; gap: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative; overflow: hidden;
+}
+.metric-card::after {
+  content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+  background: var(--accent); opacity: 0.8;
+}
+.metric-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
 }
 .metric-icon {
   width: 40px; height: 40px; border-radius: 10px;
@@ -271,8 +286,8 @@ body {
 
 <div class="container">
   <div class="header">
-    <h1>Metin Diligence Analizörü</h1>
-    <p>Bir web sitesi URL'si girin — sayfadaki metin otomatik çekilip derinlemesine analiz edilir.</p>
+    <h1>SEO İçerik Emek & Kalite Analizörü</h1>
+    <p>SEO uzmanları için özel: Bir web sitesi URL'si girin — sayfadaki içeriğin kalitesi, özgünlüğü ve harcanan emek derinlemesine analiz edilsin.</p>
   </div>
 
   <div class="input-card">
@@ -358,7 +373,7 @@ body {
   </div>
 
   <div class="footer">
-    Metin Diligence Analizörü &middot; CORS Proxy ile web kazıma &middot; Semantik benzerlik analizi &middot; Chart.js
+    SEO İçerik Emek & Kalite Analizörü &middot; CORS Proxy ile web kazıma &middot; Semantik benzerlik analizi &middot; Chart.js
   </div>
 </div>
 
@@ -859,7 +874,7 @@ function renderScoreHero(ai, repeat, orig) {
     '<div class="score-card repeat"><div class="score-label">Tekrar Skoru</div><div class="score-ring">' +
     ringSVG(repeat, scoreColorHex(repeat), 120) +
     '<div class="ring-text" style="color:' + scoreColorHex(repeat) + '">' + repeat + '</div></div><div class="score-desc">' + scoreDesc(repeat, 'repeat') + '</div></div>' +
-    '<div class="score-card original"><div class="score-label">Orijinallik Skoru</div><div class="score-ring">' +
+    '<div class="score-card original"><div class="score-label">SEO İçerik Emek Skoru</div><div class="score-ring">' +
     ringSVG(orig, scoreColorHex(orig), 120) +
     '<div class="ring-text" style="color:' + scoreColorHex(orig) + '">' + orig.toFixed(0) + '</div></div><div class="score-desc">' + scoreDesc(orig, 'original') + '</div></div>';
 }
@@ -1001,10 +1016,10 @@ function renderFullText() {
 function copyResults() {
   if (!lastResults) return;
   const r = lastResults;
-  let txt = '=== METIN DILIGENCE ANALIZ RAPORU ===\n\n';
+  let txt = '=== SEO İÇERİK EMEK & KALİTE ANALİZ RAPORU ===\n\n';
   txt += 'Yapay Zeka Skoru: ' + r.aiScore + '/100\n';
   txt += 'Tekrar Skoru: ' + r.repeatScore + '/100\n';
-  txt += 'Orijinallik Skoru: ' + r.originalityScore.toFixed(0) + '/100\n\n';
+  txt += 'SEO İçerik Emek Skoru: ' + r.originalityScore.toFixed(0) + '/100\n\n';
   txt += 'Kelime: ' + r.allWords.length + ' | Cümle: ' + r.sentences.length + ' | TTR: %' + (r.ttr*100).toFixed(1) + '\n\n';
   txt += 'BULGULAR:\n';
   r.findings.forEach(f => { txt += '- [' + f.badge + '] ' + f.text + '\n'; });
