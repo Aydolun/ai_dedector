@@ -349,6 +349,12 @@ body {
       <div class="section-header"><span class="icon">📋</span> Genel Rapor Özeti</div>
       <div class="summary-text" id="summary"></div>
     </div>
+
+    <!-- FULL TEXT -->
+    <div class="section-card">
+      <div class="section-header"><span class="icon">📄</span> Çekilen Metin (Tamamı)</div>
+      <div id="fullTextPreview" style="max-height:500px;overflow-y:auto;padding:1rem;background:var(--bg);border-radius:var(--radius-sm);font-size:0.9rem;line-height:1.8;color:var(--text-secondary);white-space:pre-wrap;word-break:break-word;"></div>
+    </div>
   </div>
 
   <div class="footer">
@@ -529,33 +535,42 @@ let sentenceChartInstance = null;
 let wordChartInstance = null;
 let radarChartInstance = null;
 let lastResults = null;
+let fullText = '';
 
 // ===================== YARDIMCI =====================
 function getSentences(text) {
+  // Metni önce satırlara böl ama çok kısa satırları (başlık vb.) atla
   const lines = text.split(/\n+/);
   const rawSentences = [];
   for (const line of lines) {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.length < 5) continue;
-    if (trimmed.startsWith('#') || (trimmed.length < 60 && !trimmed.endsWith('.') && !trimmed.endsWith('!') && !trimmed.endsWith('?'))) {
-      rawSentences.push(trimmed);
+    if (!trimmed || trimmed.length < 3) continue;
+    // Çok kısa satırlar (başlık gibi) — yine de cümle olarak al
+    if (trimmed.startsWith('#')) {
+      rawSentences.push(trimmed.replace(/^#+\s*/, ''));
       continue;
     }
+    // Noktalama işareti ile bitmeyen kısa satırları da al
     let protected_text = trimmed;
+    // Sayıları koru
     protected_text = protected_text.replace(/(\d)\.(\d)/g, '$1<DOT>$2');
+    // Kısaltmaları koru
     const abbrevs = ['dr','prof','doç','av','müh','mim','sth','alb','bşk','gen','vs','vb','yk','sgk','tc','tl','usd','eur','gb','mb','tb','dk','sn','gr','kg','cm','mm','km','m²','m³','no','nr','say','sf'];
     abbrevs.forEach(ab => {
       const regex = new RegExp('\\b(' + ab + ')\\.', 'gi');
       protected_text = protected_text.replace(regex, '$1<ABBR>');
     });
+    // Tek harf + nokta
     protected_text = protected_text.replace(/\b([A-Za-zÇçĞğİıÖöŞşÜü])\./g, '$1<ABBR>');
+    // URL'leri koru
     protected_text = protected_text.replace(/https?:\/\/[^\s]+/g, m => m.replace(/\./g, '<DOT>'));
+    // Cümlelere böl
     const parts = protected_text.split(/(?<=[.!?])\s+/);
     for (const part of parts) {
       let sentence = part.replace(/<DOT>/g, '.').replace(/<ABBR>/g, '.');
       sentence = sentence.trim();
-      const words = sentence.split(/\s+/);
-      if (sentence.length >= 10 && words.length >= 3) {
+      // Boş olmayan her parçayı al (minimum filtre yok)
+      if (sentence.length > 0) {
         rawSentences.push(sentence);
       }
     }
@@ -690,6 +705,7 @@ async function fetchAndAnalyze() {
   }
   setStatus('Metin çıkarıldı (' + text.length + ' karakter). Analiz yapılıyor...', 'loading');
   setMetaInfo(url, text.length);
+  fullText = text;
   setTimeout(() => {
     runAnalysis(text);
     setStatus('Analiz tamamlandı.', 'success');
@@ -830,6 +846,7 @@ function runAnalysis(text) {
   renderExpressions(foundCliches, repeatedTrigrams);
   renderCharts(sentLengths, filteredWords);
   renderSummary(summary);
+  renderFullText();
   document.getElementById('results').classList.add('visible');
 }
 
@@ -975,6 +992,10 @@ function renderCharts(sentLengths, filteredWords) {
 
 function renderSummary(text) {
   document.getElementById('summary').textContent = text;
+}
+
+function renderFullText() {
+  document.getElementById('fullTextPreview').textContent = fullText;
 }
 
 function copyResults() {
