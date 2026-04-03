@@ -1337,9 +1337,7 @@ if analyze_button:
                         f"{sentence_struct['mean_length']} kelime",
                     )
                 with s3:
-                    st.metric(
-                        "Tekrar Eden Cümle", f"{sentence_sim['total_repeated']}"
-                    )
+                    st.metric("Tekrar Eden Cümle", f"{sentence_sim['total_repeated']}")
                 with s4:
                     st.metric(
                         "Benzersizlik Skoru", f"{sentence_sim['uniqueness_score']}%"
@@ -1442,7 +1440,6 @@ if analyze_button:
                     f"Cümle uzunluklarının standart sapması: **{sentence_struct['std_length']}**. "
                     f"Bu değer ne kadar yüksekse, cümleler o kadar çeşitli uzunluklarda demektir. "
                     f"Çeşitlilik skoru: **{sentence_struct['variety_score']}/100**"
-                )"
                 )
 
             # --------------------------------------------------------
