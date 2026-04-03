@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Metin Diligence Analizörü</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #ffffff;
+  --bg-secondary: #fafafa;
+  --border: #e0e0e0;
+  --text: #1a1a1a;
+  --text-secondary: #666666;
+  --text-muted: #999999;
+  --card-bg: #ffffff;
+  --card-hover: #f5f5f5;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06);
+  --red: #E24B4A;
+  --red-bg: #fef2f2;
+  --red-text: #991b1b;
+  --yellow: #EF9F27;
+  --yellow-bg: #fffbeb;
+  --yellow-text: #92400e;
+  --green: #639922;
+  --green-bg: #f0fdf4;
+  --green-text: #166534;
+  --accent: #6366f1;
+  --accent-bg: #eef2ff;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f0f0f;
+    --bg-secondary: #1a1a1a;
+    --border: #2a2a2a;
+    --text: #e5e5e5;
+    --text-secondary: #a3a3a3;
+    --text-muted: #737373;
+    --card-bg: #1a1a1a;
+    --card-hover: #222222;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3);
+    --red-bg: #1c0a0a;
+    --red-text: #fca5a5;
+    --yellow-bg: #1a1400;
+    --yellow-text: #fcd34d;
+    --green-bg: #0a1a05;
+    --green-text: #86efac;
+    --accent-bg: #1a1a3a;
+  }
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  padding: 2rem 1rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.subtitle { color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1.5rem; }
+textarea {
+  width: 100%;
+  min-height: 180px;
+  padding: 1rem;
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
+  background: var(--card-bg);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+}
+textarea:focus { border-color: var(--accent); }
+.btn-row { display: flex; gap: 0.75rem; margin-top: 0.75rem; flex-wrap: wrap; }
+.btn {
+  padding: 0.6rem 1.4rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-secondary { background: var(--bg-secondary); color: var(--text); border: 0.5px solid var(--border); }
+.results { display: none; margin-top: 2rem; }
+.results.visible { display: block; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 0.75rem; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 0.75rem; }
+@media (max-width: 768px) {
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .grid-4 { grid-template-columns: 1fr; }
+}
+.card {
+  background: var(--card-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  padding: 1.2rem;
+  box-shadow: var(--shadow);
+}
+.card-title {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.metric-value { font-size: 1.8rem; font-weight: 800; }
+.metric-sub { font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem; }
+.score-high { color: var(--green); }
+.score-mid { color: var(--yellow); }
+.score-low { color: var(--red); }
+.gauge-row { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.8rem; }
+.gauge-item { display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; }
+.gauge-bar-bg {
+  flex: 1; margin: 0 0.6rem; height: 6px; background: var(--border);
+  border-radius: 3px; overflow: hidden;
+}
+.gauge-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+.gauge-label { min-width: 90px; color: var(--text-secondary); }
+.gauge-val { min-width: 30px; text-align: right; font-weight: 600; font-size: 0.8rem; }
+.finding-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.6rem 0; border-bottom: 0.5px solid var(--border);
+}
+.finding-row:last-child { border-bottom: none; }
+.finding-text { font-size: 0.9rem; flex: 1; }
+.badge {
+  display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px;
+  font-size: 0.75rem; font-weight: 600; white-space: nowrap;
+}
+.badge-ai { background: var(--yellow-bg); color: var(--yellow-text); }
+.badge-repeat { background: var(--red-bg); color: var(--red-text); }
+.badge-clean { background: var(--green-bg); color: var(--green-text); }
+.badge-cliche { background: var(--yellow-bg); color: var(--yellow-text); }
+.repeat-pair {
+  padding: 0.8rem 0; border-bottom: 0.5px solid var(--border);
+}
+.repeat-pair:last-child { border-bottom: none; }
+.repeat-pct { font-weight: 700; font-size: 0.85rem; margin-bottom: 0.3rem; }
+.repeat-sent { font-style: italic; font-size: 0.85rem; color: var(--text-secondary); margin: 0.2rem 0; }
+.pill-container { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.pill {
+  display: inline-block; padding: 0.3rem 0.7rem; border-radius: 999px;
+  font-size: 0.8rem; font-weight: 500;
+}
+.pill-cliche { background: var(--yellow-bg); color: var(--yellow-text); border: 0.5px solid var(--yellow); }
+.pill-trigram { background: var(--red-bg); color: var(--red-text); border: 0.5px solid var(--red); }
+.chart-container { position: relative; height: 280px; }
+.summary-text { font-size: 0.95rem; line-height: 1.7; color: var(--text-secondary); }
+.section-title {
+  font-size: 1rem; font-weight: 700; margin-bottom: 0.8rem;
+  padding-bottom: 0.5rem; border-bottom: 0.5px solid var(--border);
+}
+.mb { margin-bottom: 0.75rem; }
+</style>
+</head>
+<body>
+
+<h1>Metin Diligence Analizörü</h1>
+<p class="subtitle">Metninizi yapıştırın — Yapay Zeka, Tekrar ve Orijinallik skorları hesaplanır.</p>
+
+<textarea id="inputText" placeholder="Analiz edilecek metni buraya yapıştırın..."></textarea>
+<div class="btn-row">
+  <button class="btn btn-primary" onclick="analyze()">Analiz Et</button>
+  <button class="btn btn-secondary" onclick="loadSample()">Örnek Metin Yükle</button>
+</div>
+
+<div class="results" id="results">
+  <!-- Satır 1: 4 Metrik -->
+  <div class="grid-4 mb" id="metricsRow"></div>
+
+  <!-- Satır 2: AI + Orijinallik -->
+  <div class="grid-2 mb" id="scoreRow"></div>
+
+  <!-- Satır 3: Bulgular -->
+  <div class="card mb">
+    <div class="section-title">Tespit Edilen Bulgular</div>
+    <div id="findings"></div>
+  </div>
+
+  <!-- Satır 4: Tekrar Eden Cümleler -->
+  <div class="card mb" id="repeatCard" style="display:none">
+    <div class="section-title">Tekrar Eden Cümleler</div>
+    <div id="repeats"></div>
+  </div>
+
+  <!-- Satır 5: İşaretlenen İfadeler -->
+  <div class="card mb" id="expressionsCard" style="display:none">
+    <div class="section-title">İşaretlenen İfadeler</div>
+    <div id="expressions"></div>
+  </div>
+
+  <!-- Satır 6: Cümle Uzunluk Grafiği -->
+  <div class="card mb">
+    <div class="section-title">Cümle Uzunluk Dağılımı</div>
+    <div class="chart-container"><canvas id="sentenceChart"></canvas></div>
+  </div>
+
+  <!-- Satır 7: Kelime Frekans Grafiği -->
+  <div class="card mb">
+    <div class="section-title">En Sık 12 Kelime</div>
+    <div class="chart-container"><canvas id="wordChart"></canvas></div>
+  </div>
+
+  <!-- Satır 8: Özet Rapor -->
+  <div class="card mb">
+    <div class="section-title">Genel Rapor Özeti</div>
+    <div class="summary-text" id="summary"></div>
+  </div>
+</div>
+
+<script>
+// ===================== SABITLER =====================
+const TR_CLICHES = [
+  "sonuç olarak","bu bağlamda","öte yandan","vurgulamak gerekirse",
+  "dikkat edilmesi gereken","şunu belirtmek gerekir","genel itibarıyla",
+  "göz ardı edilmemelidir","bu doğrultuda","önemle vurgulanmalıdır"
+];
+const EN_CLICHES = [
+  "furthermore","moreover","additionally","it is worth noting","in conclusion",
+  "that being said","on the other hand","needless to say","first and foremost","last but not least"
+];
+const PASSIVE_TR = ["edildi","yapıldı","olundu","belirtildi","görüldü","sağlandı","kullanıldı","açıklandı","kabul edildi","değerlendirildi"];
+const PASSIVE_EN = /\b(was|were)\s+\w+ed\b/gi;
+const TYPO_CHARS = [/—/g, /–/g, /\u2026/g, /\u201C/g, /\u201D/g, /\u2018/g, /\u2019/g];
+const STOPWORDS_TR = new Set([
+  "bir","ve","veya","ile","de","da","ki","mi","mı","mu","mü","bu","şu","o",
+  "için","gibi","kadar","daha","en","çok","az","pek","ama","fakat","ancak",
+  "çünkü","eğer","yani","hem","ya","da","ise","idi","imi","imış","ecek","acak",
+  "olarak","üzere","diye","göre","rağmen","karşın","rağmen","doğru","başka",
+  "sadece","yalnız","elbette","belki","galiba","bence","sana","ona","bize",
+  "benden","senden","ondan","bizim","senin","onun","beni","seni","onu","bizi",
+  "sizi","bana","burada","orada","şurada","nerede","nereye","neden","niçin",
+  "nasıl","hangi","kim","ne","kaç","her","hiç","bazı","bazen","bazı","birçok",
+  "birkaç","bazıları","bazılarının","tüm","hepsi","herkes","hiçbir","hiçbiri",
+  "şey","şeyler","şimdi","sonra","önce","sonra","zaten","artık","henüz","hâlâ",
+  "yine","yeni","sanki","madem","meğer","meğerse","halbuki","oysa","oysaki",
+  "ne","niye","niçin","nedeniyle","dolayı","nedenle","itibaren","itibariyle",
+  "kendi","kendisi","kendini","kendine","kendinde","kendinden","kendileri",
+  "ben","sen","biz","siz","onlar","bizim","bizim","bizde","bizden","bize",
+  "sende","senden","sana","sizde","sizden","size","onda","ondan","ona","onlar",
+  "onlarda","onlardan","onlara","onları","onların","olan","oldu","olduğu",
+  "olduğunu","olacak","olabilir","olması","olup","olur","olursa","olmadı",
+  "olmak","olmadığı","olmayan","olmayan","değil","var","yok","mı","mi","mu","mü"
+]);
+const STOPWORDS_EN = new Set([
+  "the","a","an","is","are","was","were","be","been","being","have","has","had",
+  "do","does","did","will","would","could","should","may","might","shall","can",
+  "need","dare","ought","used","to","of","in","for","on","with","at","by","from",
+  "as","into","through","during","before","after","above","below","between","out",
+  "off","over","under","again","further","then","once","here","there","when","where",
+  "why","how","all","both","each","few","more","most","other","some","such","no",
+  "nor","not","only","own","same","so","than","too","very","just","because","but",
+  "and","or","if","while","about","up","that","this","these","those","it","its",
+  "i","me","my","we","our","you","your","he","him","his","she","her","they","them",
+  "their","what","which","who","whom","am"
+]);
+
+let sentenceChartInstance = null;
+let wordChartInstance = null;
+
+// ===================== YARDIMCI FONKSİYONLAR =====================
+function getSentences(text) {
+  return text.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 3);
+}
+
+function getWords(text) {
+  return text.toLowerCase().replace(/[^\w\s]/g,'').split(/\s+/).filter(w => w.length > 0);
+}
+
+function getWordsFiltered(text, lang) {
+  const stops = lang === 'tr' ? STOPWORDS_TR : STOPWORDS_EN;
+  return getWords(text).filter(w => !stops.has(w) && w.length > 2);
+}
+
+function detectLang(text) {
+  const words = getWords(text);
+  let trCount = 0, enCount = 0;
+  words.forEach(w => {
+    if (/[çğıöşü]/.test(w)) trCount++;
+    else if (STOPWORDS_EN.has(w)) enCount++;
+  });
+  return trCount >= enCount ? 'tr' : 'en';
+}
+
+function jaccard(a, b) {
+  if (a.size === 0 && b.size === 0) return 0;
+  const inter = new Set([...a].filter(x => b.has(x)));
+  const union = new Set([...a, ...b]);
+  return inter.size / union.size;
+}
+
+function stdDev(arr) {
+  if (arr.length < 2) return 0;
+  const mean = arr.reduce((s,v) => s+v, 0) / arr.length;
+  return Math.sqrt(arr.reduce((s,v) => s + (v-mean)**2, 0) / arr.length);
+}
+
+function mean(arr) {
+  return arr.length === 0 ? 0 : arr.reduce((s,v) => s+v, 0) / arr.length;
+}
+
+function scoreColor(score) {
+  if (score > 60) return 'var(--red)';
+  if (score >= 30) return 'var(--yellow)';
+  return 'var(--green)';
+}
+
+function scoreClass(score) {
+  if (score > 60) return 'score-low';
+  if (score >= 30) return 'score-mid';
+  return 'score-high';
+}
+
+// ===================== ANALİZ =====================
+function analyze() {
+  const text = document.getElementById('inputText').value.trim();
+  if (!text) return;
+
+  const lang = detectLang(text);
+  const sentences = getSentences(text);
+  const allWords = getWords(text);
+  const filteredWords = getWordsFiltered(text, lang);
+  const clichesTR = lang === 'tr' ? TR_CLICHES : [];
+  const clichesEN = lang === 'en' ? EN_CLICHES : [];
+  const allCliches = [...clichesTR, ...clichesEN];
+  const passiveList = lang === 'tr' ? PASSIVE_TR : [];
+
+  // 1. Tipografik karakterler
+  let typoCount = 0;
+  TYPO_CHARS.forEach(re => { const m = text.match(re); if (m) typoCount += m.length; });
+
+  // 2. Klişe ifadeler
+  const foundCliches = [];
+  const textLower = text.toLowerCase();
+  allCliches.forEach(c => {
+    const regex = new RegExp(c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
+    const matches = textLower.match(regex);
+    if (matches) {
+      matches.forEach(() => foundCliches.push(c));
+    }
+  });
+
+  // 3. Pasif yapı
+  let passiveCount = 0;
+  passiveList.forEach(p => {
+    const regex = new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
+    const m = text.match(regex);
+    if (m) passiveCount += m.length;
+  });
+  if (lang === 'en') {
+    const m = text.match(PASSIVE_EN);
+    if (m) passiveCount += m.length;
+  }
+
+  // 4. Liste satırları
+  const lines = text.split('\n');
+  const listLines = lines.filter(l => /^\s*[-•]\s/.test(l)).length;
+
+  // 5. Markdown başlıkları
+  const headingLines = lines.filter(l => /^\s*#{1,6}\s/.test(l)).length;
+
+  // 6. Cümle uzunlukları
+  const sentLengths = sentences.map(s => getWords(s).length);
+
+  // 7. TTR
+  const uniqueWords = new Set(allWords);
+  const ttr = allWords.length > 0 ? uniqueWords.size / allWords.length : 0;
+
+  // 8. Burstiness
+  const sd = stdDev(sentLengths);
+  const avg = mean(sentLengths);
+  const burstiness = avg > 0 ? sd / avg : 0;
+
+  // 9. Jaccard cümle benzerliği
+  const sentWordSets = sentences.map(s => new Set(getWordsFiltered(s, lang)));
+  const similarPairs = [];
+  for (let i = 0; i < sentWordSets.length; i++) {
+    for (let j = i + 1; j < sentWordSets.length; j++) {
+      const sim = jaccard(sentWordSets[i], sentWordSets[j]);
+      if (sim >= 0.55) {
+        similarPairs.push({ a: sentences[i], b: sentences[j], sim: sim });
+      }
+    }
+  }
+  similarPairs.sort((a,b) => b.sim - a.sim);
+
+  // 10. Trigram analizi
+  const trigramCounts = {};
+  for (let i = 0; i <= filteredWords.length - 3; i++) {
+    const tri = filteredWords[i] + ' ' + filteredWords[i+1] + ' ' + filteredWords[i+2];
+    trigramCounts[tri] = (trigramCounts[tri] || 0) + 1;
+  }
+  const repeatedTrigrams = Object.entries(trigramCounts)
+    .filter(([,c]) => c > 1)
+    .sort((a,b) => b[1] - a[1]);
+
+  // ===================== SKORLAMA =====================
+  let aiScore = 0;
+  if (foundCliches.length >= 3) aiScore += 25;
+  else if (foundCliches.length >= 1) aiScore += 12;
+  if (typoCount >= 3) aiScore += 20;
+  else if (typoCount >= 1) aiScore += 8;
+  if (burstiness < 0.45) aiScore += 15;
+  if (listLines > 3) aiScore += 10;
+  if (headingLines > 2) aiScore += 10;
+  if (passiveCount > 2) aiScore += 10;
+  if (ttr > 0.70) aiScore += 10;
+  aiScore = Math.min(aiScore, 100);
+
+  let repeatScore = 0;
+  repeatScore += Math.min(similarPairs.length * 15, 40);
+  const trigExtra = Math.max(0, repeatedTrigrams.length - 3);
+  repeatScore += Math.min(trigExtra * 8, 30);
+  repeatScore = Math.min(repeatScore, 100);
+
+  const originalityScore = Math.max(0, 100 - aiScore - repeatScore * 0.3);
+
+  // ===================== BULGULAR =====================
+  const findings = [];
+  if (foundCliches.length > 0) {
+    findings.push({ text: `${foundCliches.length} adet klişe ifade tespit edildi`, badge: 'Klişe' });
+  }
+  if (typoCount > 0) {
+    findings.push({ text: `${typoCount} adet tipografik karakter (em dash, akıllı tırnak vb.)`, badge: 'YZ İşareti' });
+  }
+  if (burstiness < 0.45) {
+    findings.push({ text: `Düşük cümle varyansı (burstiness: ${burstiness.toFixed(2)}) — monoton akış`, badge: 'YZ İşareti' });
+  }
+  if (passiveCount > 0) {
+    findings.push({ text: `${passiveCount} adet pasif yapı tespit edildi`, badge: 'YZ İşareti' });
+  }
+  if (listLines > 0) {
+    findings.push({ text: `${listLines} adet liste satırı`, badge: 'YZ İşareti' });
+  }
+  if (headingLines > 0) {
+    findings.push({ text: `${headingLines} adet markdown başlığı`, badge: 'YZ İşareti' });
+  }
+  if (similarPairs.length > 0) {
+    findings.push({ text: `${similarPairs.length} adet benzer cümle çifti (>%55)`, badge: 'Tekrar' });
+  }
+  if (repeatedTrigrams.length > 0) {
+    findings.push({ text: `${repeatedTrigrams.length} adet tekrar eden trigram`, badge: 'Tekrar' });
+  }
+  if (findings.length === 0) {
+    findings.push({ text: 'Önemli bir işaret tespit edilmedi', badge: 'Temiz' });
+  }
+
+  // ===================== ÖZET RAPOR =====================
+  let summary = '';
+  summary += `Metin ${allWords.length} kelime ve ${sentences.length} cümleden oluşmaktadır. `;
+  summary += `Sözcük çeşitliliği (TTR) %${(ttr*100).toFixed(1)} olarak hesaplanmıştır. `;
+  if (aiScore > 60) {
+    summary += `Yapay Zeka skoru yüksek (${aiScore}/100) çıkmıştır. `;
+    if (foundCliches.length > 0) summary += `${foundCliches.length} klişe ifade, `;
+    if (burstiness < 0.45) summary += 'monoton cümle akışı, ';
+    if (passiveCount > 2) summary += 'yoğun pasif yapı kullanımı, ';
+    summary = summary.replace(/, $/,'');
+    summary += '. Bu bulgular metnin yapay zeka tarafından üretilmiş olabileceğini düşündürmektedir. ';
+  } else if (aiScore >= 30) {
+    summary += `Yapay Zeka skoru orta seviyededir (${aiScore}/100). Bazı YZ işaretleri bulunmakla birlikte kesin bir yargı zordur. `;
+  } else {
+    summary += `Yapay Zeka skoru düşük (${aiScore}/100). Metin büyük olasılıkla insan tarafından yazılmıştır. `;
+  }
+  if (repeatScore > 40) {
+    summary += `Tekrar skoru yüksektir (${repeatScore}/100). ${similarPairs.length} benzer cümle çifti ve ${repeatedTrigrams.length} tekrar eden trigram tespit edilmiştir. `;
+  }
+  summary += `Orijinallik skoru ${originalityScore.toFixed(0)}/100 olarak hesaplanmıştır.`;
+
+  // ===================== ARAYÜZE YAZDIRMA =====================
+  renderMetrics(allWords.length, sentences.length, ttr, burstiness);
+  renderScores(aiScore, repeatScore, originalityScore, foundCliches, typoCount, listLines, passiveCount, similarPairs, repeatedTrigrams, burstiness);
+  renderFindings(findings);
+  renderRepeats(similarPairs);
+  renderExpressions(foundCliches, repeatedTrigrams);
+  renderCharts(sentLengths, filteredWords);
+  renderSummary(summary);
+
+  document.getElementById('results').classList.add('visible');
+}
+
+function renderMetrics(wordCount, sentCount, ttr, burstiness) {
+  document.getElementById('metricsRow').innerHTML = `
+    <div class="card">
+      <div class="card-title">Kelime Sayısı</div>
+      <div class="metric-value">${wordCount}</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Cümle Sayısı</div>
+      <div class="metric-value">${sentCount}</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Sözcük Çeşitliliği (TTR)</div>
+      <div class="metric-value">${(ttr*100).toFixed(1)}%</div>
+      <div class="metric-sub">${ttr > 0.65 ? 'Zengin' : ttr > 0.45 ? 'Orta' : 'Düşük'} kelime çeşitliliği</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Cümle Varyansı</div>
+      <div class="metric-value">${burstiness.toFixed(2)}</div>
+      <div class="metric-sub">${burstiness < 0.45 ? 'Monoton (YZ işareti)' : 'Çeşitli (İnsan işareti)'}</div>
+    </div>
+  `;
+}
+
+function renderScores(ai, repeat, originality, cliches, typos, lists, passives, pairs, trigrams, burst) {
+  const aiColor = scoreColor(ai);
+  const origColor = scoreColor(originality);
+
+  // AI gauge items
+  const clichPct = cliches.length >= 3 ? 100 : cliches.length >= 1 ? 50 : 0;
+  const typoPct = typos >= 3 ? 100 : typos >= 1 ? 40 : 0;
+  const listPct = lists > 3 ? 100 : lists > 0 ? 33 : 0;
+  const passPct = passives > 2 ? 100 : passives > 0 ? 50 : 0;
+
+  // Orig gauge items
+  const simPct = pairs.length > 0 ? Math.min(pairs.length * 25, 100) : 0;
+  const trigPct = trigrams.length > 3 ? Math.min((trigrams.length-3)*20, 100) : 0;
+  const varPct = burst < 0.45 ? 80 : burst < 0.7 ? 40 : 10;
+
+  document.getElementById('scoreRow').innerHTML = `
+    <div class="card">
+      <div class="card-title">Yapay Zeka Skoru</div>
+      <div class="metric-value ${scoreClass(ai)}">${ai}</div>
+      <div class="metric-sub">${ai > 60 ? 'Yüksek YZ olasılığı' : ai >= 30 ? 'Orta seviye' : 'Düşük olasılık'}</div>
+      <div class="gauge-row">
+        <div class="gauge-item">
+          <span class="gauge-label">Klişeler</span>
+          <div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:${clichPct}%;background:var(--yellow)"></div></div>
+          <span class="gauge-val">${cliches.length}</span>
+        </div>
+        <div class="gauge-item">
+          <span class="gauge-label">Tipografik</span>
+          <div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:${typoPct}%;background:var(--accent)"></div></div>
+          <span class="gauge-val">${typos}</span>
+        </div>
+        <div class="gauge-item">
+          <span class="gauge-label">Liste</span>
+          <div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:${listPct}%;background:var(--green)"></div></div>
+          <span class="gauge-val">${lists}</span>
+        </div>
+        <div class="gauge-item">
+          <span class="gauge-label">Pasif Yapı</span>
+          <div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:${passPct}%;background:var(--red)"></div></div>
+          <span class="gauge-val">${passives}</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Orijinallik Skoru</div>
+      <div class="metric-value ${scoreClass(originality)}">${originality.toFixed(0)}</div>
+      <div class="metric-sub">${originality > 60 ? 'Yüksek orijinallik' : originality >= 30 ? 'Orta seviye' : 'Düşük orijinallik'}</div>
+      <div class="gauge-row">
+        <div class="gauge-item">
+          <span class="gauge-label">Benzer Cümle</span>
+          <div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:${simPct}%;background:var(--red)"></div></div>
+          <span class="gauge-val">${pairs.length}</span>
+        </div>
+        <div class="gauge-item">
+          <span class="gauge-label">Trigram</span>
+          <div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:${trigPct}%;background:var(--red)"></div></div>
+          <span class="gauge-val">${trigrams.length}</span>
+        </div>
+        <div class="gauge-item">
+          <span class="gauge-label">Varyans</span>
+          <div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:${varPct}%;background:var(--accent)"></div></div>
+          <span class="gauge-val">${burst.toFixed(2)}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderFindings(findings) {
+  document.getElementById('findings').innerHTML = findings.map(f => {
+    const badgeClass = f.badge === 'YZ İşareti' ? 'badge-ai' : f.badge === 'Tekrar' ? 'badge-repeat' : 'badge-clean';
+    return `<div class="finding-row">
+      <span class="finding-text">${f.text}</span>
+      <span class="badge ${badgeClass}">${f.badge}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderRepeats(pairs) {
+  const card = document.getElementById('repeatCard');
+  if (pairs.length === 0) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  document.getElementById('repeats').innerHTML = pairs.map((p,i) => `
+    <div class="repeat-pair">
+      <div class="repeat-pct" style="color:${scoreColor(p.sim*100)}">%${(p.sim*100).toFixed(0)} Benzerlik — Çift #${i+1}</div>
+      <div class="repeat-sent">"${p.a}"</div>
+      <div class="repeat-sent">"${p.b}"</div>
+    </div>
+  `).join('');
+}
+
+function renderExpressions(cliches, trigrams) {
+  const card = document.getElementById('expressionsCard');
+  if (cliches.length === 0 && trigrams.length === 0) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  let html = '';
+  if (cliches.length > 0) {
+    html += '<div style="margin-bottom:0.8rem"><strong style="font-size:0.85rem;color:var(--text-secondary)">Klişe İfadeler:</strong><div class="pill-container" style="margin-top:0.4rem">';
+    const unique = [...new Set(cliches)];
+    unique.forEach(c => { html += `<span class="pill pill-cliche">${c}</span>`; });
+    html += '</div></div>';
+  }
+  if (trigrams.length > 0) {
+    html += '<div><strong style="font-size:0.85rem;color:var(--text-secondary)">Tekrar Eden Trigramlar:</strong><div class="pill-container" style="margin-top:0.4rem">';
+    trigrams.slice(0,20).forEach(([tri, count]) => {
+      html += `<span class="pill pill-trigram">${tri} (${count}×)</span>`;
+    });
+    html += '</div></div>';
+  }
+  document.getElementById('expressions').innerHTML = html;
+}
+
+function renderCharts(sentLengths, filteredWords) {
+  // Cümle uzunluk dağılımı
+  const buckets = {'1-5':0,'6-10':0,'11-20':0,'21-35':0,'35+':0};
+  sentLengths.forEach(l => {
+    if (l <= 5) buckets['1-5']++;
+    else if (l <= 10) buckets['6-10']++;
+    else if (l <= 20) buckets['11-20']++;
+    else if (l <= 35) buckets['21-35']++;
+    else buckets['35+']++;
+  });
+
+  if (sentenceChartInstance) sentenceChartInstance.destroy();
+  const ctx1 = document.getElementById('sentenceChart').getContext('2d');
+  sentenceChartInstance = new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: Object.keys(buckets),
+      datasets: [{
+        label: 'Cümle Sayısı',
+        data: Object.values(buckets),
+        backgroundColor: ['#639922','#8bc34a','#EF9F27','#f59e0b','#E24B4A'],
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+
+  // Kelime frekansı
+  const wordCounts = {};
+  filteredWords.forEach(w => { wordCounts[w] = (wordCounts[w]||0) + 1; });
+  const top12 = Object.entries(wordCounts).sort((a,b) => b[1]-a[1]).slice(0,12);
+
+  if (wordChartInstance) wordChartInstance.destroy();
+  const ctx2 = document.getElementById('wordChart').getContext('2d');
+  wordChartInstance = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: top12.map(([w]) => w),
+      datasets: [{
+        label: 'Tekrar Sayısı',
+        data: top12.map(([,c]) => c),
+        backgroundColor: '#6366f1',
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+}
+
+function renderSummary(text) {
+  document.getElementById('summary').textContent = text;
+}
+
+// ===================== ÖRNEK METİN =====================
+function loadSample() {
+  document.getElementById('inputText').value = `Yapay zeka teknolojileri günümüz dünyasında büyük bir hızla gelişmektedir. Bu bağlamda, yapay zekanın önemi her geçen gün daha da artmaktadır. Öte yandan, yapay zeka teknolojilerinin toplum üzerindeki etkileri de göz ardı edilmemelidir.
+
+Sonuç olarak, yapay zeka teknolojileri hayatımızın her alanında önemli bir rol oynamaktadır. Şunu belirtmek gerekir ki, yapay zeka teknolojileri gelecekte de önemini korumaya devam edecektir. Bu doğrultuda, yapay zeka alanında yapılan çalışmaların artırılması önemle vurgulanmalıdır.
+
+Yapay zeka teknolojileri günümüz dünyasında büyük bir hızla gelişmektedir. Bu bağlamda, yapay zekanın toplum üzerindeki etkileri göz ardı edilmemelidir. Genel itibarıyla, yapay zeka teknolojileri büyük bir önem arz etmektedir.
+
+Dikkat edilmesi gereken en önemli husus, yapay zeka teknolojilerinin etik boyutudur. Vurgulamak gerekirse, yapay zeka teknolojileri insan hayatını kolaylaştırmak için geliştirilmiştir. Bu bağlamda, yapay zeka teknolojilerinin doğru kullanılması büyük önem arz etmektedir.
+
+Sonuç olarak, yapay zeka teknolojileri geleceğin en önemli alanlarından biri olmaya devam edecektir. Öte yandan, yapay zeka teknolojilerinin gelişimi hız kesmeden devam edecektir. Bu doğrultuda, yapay zeka alanında yapılan yatırımların artırılması gerekmektedir.`;
+}
+</script>
+</body>
+</html>
