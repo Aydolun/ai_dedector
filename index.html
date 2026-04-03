@@ -7,21 +7,24 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
 :root {
-  --bg: #ffffff; --bg-secondary: #fafafa; --border: #e0e0e0;
-  --text: #1a1a1a; --text-secondary: #666666; --text-muted: #999999;
-  --card-bg: #ffffff; --card-hover: #f5f5f5;
-  --shadow: 0 1px 3px rgba(0,0,0,0.06);
-  --red: #E24B4A; --red-bg: #fef2f2; --red-text: #991b1b;
-  --yellow: #EF9F27; --yellow-bg: #fffbeb; --yellow-text: #92400e;
-  --green: #639922; --green-bg: #f0fdf4; --green-text: #166534;
-  --accent: #6366f1; --accent-bg: #eef2ff;
+  --bg: #f8f9fb; --bg-card: #ffffff; --bg-input: #ffffff;
+  --border: #e5e7eb; --border-light: #f0f0f0;
+  --text: #111827; --text-secondary: #6b7280; --text-muted: #9ca3af;
+  --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04);
+  --red: #ef4444; --red-bg: #fef2f2; --red-text: #dc2626; --red-light: #fca5a5;
+  --yellow: #f59e0b; --yellow-bg: #fffbeb; --yellow-text: #d97706; --yellow-light: #fcd34d;
+  --green: #22c55e; --green-bg: #f0fdf4; --green-text: #16a34a; --green-light: #86efac;
+  --accent: #6366f1; --accent-bg: #eef2ff; --accent-light: #a5b4fc;
+  --radius: 12px; --radius-sm: 8px;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0f0f0f; --bg-secondary: #1a1a1a; --border: #2a2a2a;
-    --text: #e5e5e5; --text-secondary: #a3a3a3; --text-muted: #737373;
-    --card-bg: #1a1a1a; --card-hover: #222222;
+    --bg: #0c0c0d; --bg-card: #18181b; --bg-input: #1e1e22;
+    --border: #27272a; --border-light: #1f1f23;
+    --text: #f4f4f5; --text-secondary: #a1a1aa; --text-muted: #71717a;
     --shadow: 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-lg: 0 4px 12px rgba(0,0,0,0.4);
     --red-bg: #1c0a0a; --red-text: #fca5a5;
     --yellow-bg: #1a1400; --yellow-text: #fcd34d;
     --green-bg: #0a1a05; --green-text: #86efac;
@@ -30,162 +33,326 @@
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
   background: var(--bg); color: var(--text); line-height: 1.6;
-  padding: 2rem 1rem; max-width: 1100px; margin: 0 auto;
+  padding: 0; min-height: 100vh;
 }
-h1 {
-  font-size: 1.8rem; font-weight: 700; margin-bottom: 0.3rem;
-  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+.container { max-width: 1080px; margin: 0 auto; padding: 2rem 1.25rem; }
+
+/* HEADER */
+.header { text-align: center; padding: 2.5rem 0 2rem; }
+.header h1 {
+  font-size: 2rem; font-weight: 800; margin-bottom: 0.4rem;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
 }
-.subtitle { color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1.5rem; }
-.input-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+.header p { color: var(--text-secondary); font-size: 0.95rem; max-width: 500px; margin: 0 auto; }
+
+/* INPUT */
+.input-card {
+  background: var(--bg-card); border: 0.5px solid var(--border);
+  border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow);
+  margin-bottom: 1.5rem;
+}
+.input-row { display: flex; gap: 0.5rem; }
 #urlInput {
-  flex: 1; padding: 0.75rem 1rem; border: 0.5px solid var(--border);
-  border-radius: 8px; font-size: 0.95rem; font-family: inherit;
-  background: var(--card-bg); color: var(--text); outline: none;
-  transition: border-color 0.2s;
+  flex: 1; padding: 0.8rem 1rem; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 0.95rem; font-family: inherit;
+  background: var(--bg-input); color: var(--text); outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-#urlInput:focus { border-color: var(--accent); }
+#urlInput:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+#urlInput::placeholder { color: var(--text-muted); }
 .btn {
-  padding: 0.75rem 1.4rem; border: none; border-radius: 8px;
+  padding: 0.8rem 1.5rem; border: none; border-radius: var(--radius-sm);
   font-size: 0.9rem; font-weight: 600; cursor: pointer;
-  transition: opacity 0.2s; white-space: nowrap;
+  transition: all 0.2s; white-space: nowrap; display: inline-flex;
+  align-items: center; gap: 0.4rem;
 }
-.btn:hover { opacity: 0.85; }
-.btn-primary { background: var(--accent); color: #fff; }
-.btn-secondary { background: var(--bg-secondary); color: var(--text); border: 0.5px solid var(--border); }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn-primary {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff; box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+}
+.btn-primary:hover { box-shadow: 0 4px 16px rgba(99,102,241,0.4); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-sm { padding: 0.5rem 1rem; font-size: 0.8rem; }
+.btn-outline {
+  background: transparent; color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.btn-outline:hover { background: var(--bg-secondary); }
+
+/* STATUS */
 .status-bar {
-  padding: 0.6rem 1rem; border-radius: 6px; font-size: 0.85rem;
-  margin-bottom: 1rem; display: none;
+  padding: 0.7rem 1rem; border-radius: var(--radius-sm); font-size: 0.85rem;
+  margin-bottom: 1rem; display: none; align-items: center; gap: 0.5rem;
 }
-.status-bar.visible { display: block; }
+.status-bar.visible { display: flex; }
 .status-loading { background: var(--accent-bg); color: var(--accent); }
 .status-error { background: var(--red-bg); color: var(--red-text); }
 .status-success { background: var(--green-bg); color: var(--green-text); }
+.spinner {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid currentColor; border-top-color: transparent;
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* META */
 .meta-info {
-  padding: 0.6rem 1rem; background: var(--bg-secondary);
-  border-radius: 6px; font-size: 0.85rem; color: var(--text-secondary);
-  margin-bottom: 1.5rem; display: none;
+  padding: 0.6rem 1rem; background: var(--bg-card);
+  border: 0.5px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.5rem;
+  display: none;
 }
-.meta-info.visible { display: block; }
-.results { display: none; margin-top: 1rem; }
-.results.visible { display: block; }
-.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 0.75rem; }
-.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 0.75rem; }
-@media (max-width: 768px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } .grid-2 { grid-template-columns: 1fr; } }
-@media (max-width: 480px) { .grid-4 { grid-template-columns: 1fr; } .input-row { flex-direction: column; } }
-.card {
-  background: var(--card-bg); border: 0.5px solid var(--border);
-  border-radius: 8px; padding: 1.2rem; box-shadow: var(--shadow);
+.meta-info.visible { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+
+/* RESULTS */
+.results { display: none; }
+.results.visible { display: block; animation: fadeUp 0.5s ease; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+/* SCORE HERO */
+.score-hero {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+  margin-bottom: 1.5rem;
 }
-.card-title {
-  font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;
+@media (max-width: 640px) { .score-hero { grid-template-columns: 1fr; } }
+.score-card {
+  background: var(--bg-card); border: 0.5px solid var(--border);
+  border-radius: var(--radius); padding: 1.5rem; text-align: center;
+  box-shadow: var(--shadow); position: relative; overflow: hidden;
+}
+.score-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 3px; border-radius: 3px 3px 0 0;
+}
+.score-card.ai::before { background: linear-gradient(90deg, #6366f1, #a855f7); }
+.score-card.repeat::before { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+.score-card.original::before { background: linear-gradient(90deg, #22c55e, #06b6d4); }
+.score-label {
+  font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;
   color: var(--text-muted); font-weight: 600; margin-bottom: 0.5rem;
 }
-.metric-value { font-size: 1.8rem; font-weight: 800; }
-.metric-sub { font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem; }
-.score-high { color: var(--green); }
-.score-mid { color: var(--yellow); }
-.score-low { color: var(--red); }
-.gauge-row { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.8rem; }
-.gauge-item { display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; }
-.gauge-bar-bg {
-  flex: 1; margin: 0 0.6rem; height: 6px; background: var(--border);
-  border-radius: 3px; overflow: hidden;
+.score-ring { position: relative; width: 120px; height: 120px; margin: 0 auto 0.75rem; }
+.score-ring svg { transform: rotate(-90deg); }
+.score-ring .ring-bg { fill: none; stroke: var(--border); stroke-width: 8; }
+.score-ring .ring-fill { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1.5s ease; }
+.score-ring .ring-text {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  font-size: 1.8rem; font-weight: 800;
 }
-.gauge-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
-.gauge-label { min-width: 90px; color: var(--text-secondary); }
-.gauge-val { min-width: 30px; text-align: right; font-weight: 600; font-size: 0.8rem; }
+.score-ring .ring-sub {
+  position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+  font-size: 0.7rem; color: var(--text-muted); white-space: nowrap;
+}
+.score-desc { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; }
+
+/* METRICS ROW */
+.metrics-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+@media (max-width: 768px) { .metrics-row { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .metrics-row { grid-template-columns: 1fr 1fr; } }
+.metric-card {
+  background: var(--bg-card); border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm); padding: 1rem; box-shadow: var(--shadow);
+  display: flex; align-items: center; gap: 0.75rem;
+}
+.metric-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; flex-shrink: 0;
+}
+.metric-icon.blue { background: #eef2ff; color: #6366f1; }
+.metric-icon.green { background: #f0fdf4; color: #22c55e; }
+.metric-icon.yellow { background: #fffbeb; color: #f59e0b; }
+.metric-icon.purple { background: #faf5ff; color: #a855f7; }
+@media (prefers-color-scheme: dark) {
+  .metric-icon.blue { background: #1a1a3a; }
+  .metric-icon.green { background: #0a1a05; }
+  .metric-icon.yellow { background: #1a1400; }
+  .metric-icon.purple { background: #1a1025; }
+}
+.metric-body { min-width: 0; }
+.metric-val { font-size: 1.3rem; font-weight: 700; line-height: 1.2; }
+.metric-lbl { font-size: 0.75rem; color: var(--text-muted); }
+
+/* SECTION CARD */
+.section-card {
+  background: var(--bg-card); border: 0.5px solid var(--border);
+  border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow);
+  margin-bottom: 1rem;
+}
+.section-header {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 1rem; font-weight: 700; margin-bottom: 1rem;
+  padding-bottom: 0.75rem; border-bottom: 0.5px solid var(--border-light);
+}
+.section-header .icon { font-size: 1.1rem; }
+
+/* GAUGE */
+.gauge-row { display: flex; flex-direction: column; gap: 0.6rem; }
+.gauge-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
+.gauge-bar-bg {
+  flex: 1; height: 8px; background: var(--border);
+  border-radius: 4px; overflow: hidden;
+}
+.gauge-bar-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+.gauge-label { min-width: 80px; color: var(--text-secondary); font-size: 0.8rem; }
+.gauge-val { min-width: 28px; text-align: right; font-weight: 700; font-size: 0.8rem; }
+
+/* FINDINGS */
 .finding-row {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 0.6rem 0; border-bottom: 0.5px solid var(--border);
+  padding: 0.65rem 0; border-bottom: 0.5px solid var(--border-light);
 }
 .finding-row:last-child { border-bottom: none; }
-.finding-text { font-size: 0.9rem; flex: 1; }
+.finding-text { font-size: 0.88rem; flex: 1; color: var(--text-secondary); }
 .badge {
-  display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px;
-  font-size: 0.75rem; font-weight: 600; white-space: nowrap;
+  display: inline-block; padding: 0.2rem 0.65rem; border-radius: 999px;
+  font-size: 0.7rem; font-weight: 700; white-space: nowrap;
+  text-transform: uppercase; letter-spacing: 0.03em;
 }
 .badge-ai { background: var(--yellow-bg); color: var(--yellow-text); }
 .badge-repeat { background: var(--red-bg); color: var(--red-text); }
 .badge-clean { background: var(--green-bg); color: var(--green-text); }
-.badge-cliche { background: var(--yellow-bg); color: var(--yellow-text); }
-.badge-semantic { background: #f0f0ff; color: #4a4ae2; }
+.badge-semantic { background: #eef2ff; color: #6366f1; }
+
+/* REPEATS */
 .repeat-section { margin-bottom: 1.2rem; }
+.repeat-section:last-child { margin-bottom: 0; }
 .repeat-section-title {
-  font-size: 0.85rem; font-weight: 700; margin-bottom: 0.5rem;
-  padding-bottom: 0.3rem; border-bottom: 0.5px solid var(--border);
+  font-size: 0.82rem; font-weight: 700; margin-bottom: 0.6rem;
+  display: flex; align-items: center; gap: 0.4rem;
 }
 .repeat-pair {
-  padding: 0.8rem 0; border-bottom: 0.5px solid var(--border);
+  padding: 0.8rem; background: var(--bg); border-radius: var(--radius-sm);
+  margin-bottom: 0.5rem; border: 0.5px solid var(--border-light);
 }
-.repeat-pair:last-child { border-bottom: none; }
-.repeat-pct { font-weight: 700; font-size: 0.85rem; margin-bottom: 0.3rem; }
-.repeat-sent { font-style: italic; font-size: 0.85rem; color: var(--text-secondary); margin: 0.2rem 0; }
-.pill-container { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.repeat-pair:last-child { margin-bottom: 0; }
+.repeat-pct { font-weight: 700; font-size: 0.82rem; margin-bottom: 0.35rem; }
+.repeat-sent { font-size: 0.83rem; color: var(--text-secondary); margin: 0.15rem 0; line-height: 1.5; }
+
+/* PILLS */
+.pill-container { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .pill {
   display: inline-block; padding: 0.3rem 0.7rem; border-radius: 999px;
-  font-size: 0.8rem; font-weight: 500;
+  font-size: 0.78rem; font-weight: 500;
 }
-.pill-cliche { background: var(--yellow-bg); color: var(--yellow-text); border: 0.5px solid var(--yellow); }
-.pill-trigram { background: var(--red-bg); color: var(--red-text); border: 0.5px solid var(--red); }
-.chart-container { position: relative; height: 280px; }
-.summary-text { font-size: 0.95rem; line-height: 1.7; color: var(--text-secondary); }
-.section-title {
-  font-size: 1rem; font-weight: 700; margin-bottom: 0.8rem;
-  padding-bottom: 0.5rem; border-bottom: 0.5px solid var(--border);
+.pill-cliche { background: var(--yellow-bg); color: var(--yellow-text); }
+.pill-trigram { background: var(--red-bg); color: var(--red-text); }
+
+/* CHARTS */
+.chart-container { position: relative; height: 260px; }
+
+/* SUMMARY */
+.summary-text { font-size: 0.92rem; line-height: 1.75; color: var(--text-secondary); }
+
+/* COPY BTN */
+.copy-row { display: flex; justify-content: flex-end; margin-bottom: 1rem; }
+
+/* FOOTER */
+.footer {
+  text-align: center; padding: 2rem 0; color: var(--text-muted);
+  font-size: 0.78rem; border-top: 0.5px solid var(--border-light);
+  margin-top: 2rem;
 }
-.mb { margin-bottom: 0.75rem; }
-.spinner {
-  display: inline-block; width: 14px; height: 14px;
-  border: 2px solid var(--accent); border-top-color: transparent;
-  border-radius: 50%; animation: spin 0.8s linear infinite;
-  margin-right: 6px; vertical-align: middle;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ANIMATED COUNTER */
+.counter { display: inline-block; }
 </style>
 </head>
 <body>
 
-<h1>Metin Diligence Analizörü</h1>
-<p class="subtitle">Bir web sitesi URL'si girin — sayfadaki metin otomatik çekilip analiz edilir.</p>
+<div class="container">
+  <div class="header">
+    <h1>Metin Diligence Analizörü</h1>
+    <p>Bir web sitesi URL'si girin — sayfadaki metin otomatik çekilip derinlemesine analiz edilir.</p>
+  </div>
 
-<div class="input-row">
-  <input type="url" id="urlInput" placeholder="https://ornek.com/makale" />
-  <button class="btn btn-primary" id="analyzeBtn" onclick="fetchAndAnalyze()">Analiz Et</button>
-</div>
-<div class="status-bar" id="statusBar"></div>
-<div class="meta-info" id="metaInfo"></div>
+  <div class="input-card">
+    <div class="input-row">
+      <input type="url" id="urlInput" placeholder="https://ornek.com/makale" />
+      <button class="btn btn-primary" id="analyzeBtn" onclick="fetchAndAnalyze()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v6M5 8h6"/></svg>
+        Analiz Et
+      </button>
+    </div>
+  </div>
 
-<div class="results" id="results">
-  <div class="grid-4 mb" id="metricsRow"></div>
-  <div class="grid-2 mb" id="scoreRow"></div>
-  <div class="card mb">
-    <div class="section-title">Tespit Edilen Bulgular</div>
-    <div id="findings"></div>
+  <div class="status-bar" id="statusBar"></div>
+  <div class="meta-info" id="metaInfo"></div>
+
+  <div class="results" id="results">
+    <div class="copy-row">
+      <button class="btn btn-outline btn-sm" onclick="copyResults()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><path d="M5 5V3a1 1 0 011-1h7a1 1 0 011 1v7a1 1 0 01-1 1h-2"/></svg>
+        Sonuçları Kopyala
+      </button>
+    </div>
+
+    <!-- SCORE HERO -->
+    <div class="score-hero" id="scoreHero"></div>
+
+    <!-- METRICS -->
+    <div class="metrics-row" id="metricsRow"></div>
+
+    <!-- RADAR + GAUGES -->
+    <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
+      <div class="section-card">
+        <div class="section-header"><span class="icon">🎯</span> AI Bileşen Analizi</div>
+        <div class="chart-container" style="height:240px"><canvas id="radarChart"></canvas></div>
+      </div>
+      <div class="section-card">
+        <div class="section-header"><span class="icon">📊</span> Detaylı Göstergeler</div>
+        <div id="gauges"></div>
+      </div>
+    </div>
+
+    <!-- FINDINGS -->
+    <div class="section-card">
+      <div class="section-header"><span class="icon">🔍</span> Tespit Edilen Bulgular</div>
+      <div id="findings"></div>
+    </div>
+
+    <!-- REPEATS -->
+    <div class="section-card" id="repeatCard" style="display:none">
+      <div class="section-header"><span class="icon">🔄</span> Tekrar Eden Cümleler</div>
+      <div id="repeats"></div>
+    </div>
+
+    <!-- EXPRESSIONS -->
+    <div class="section-card" id="expressionsCard" style="display:none">
+      <div class="section-header"><span class="icon">🏷️</span> İşaretlenen İfadeler</div>
+      <div id="expressions"></div>
+    </div>
+
+    <!-- SENTENCE CHART -->
+    <div class="section-card">
+      <div class="section-header"><span class="icon">📏</span> Cümle Uzunluk Dağılımı</div>
+      <div class="chart-container"><canvas id="sentenceChart"></canvas></div>
+    </div>
+
+    <!-- WORD CHART -->
+    <div class="section-card">
+      <div class="section-header"><span class="icon">🔤</span> En Sık 12 Kelime</div>
+      <div class="chart-container"><canvas id="wordChart"></canvas></div>
+    </div>
+
+    <!-- SUMMARY -->
+    <div class="section-card">
+      <div class="section-header"><span class="icon">📋</span> Genel Rapor Özeti</div>
+      <div class="summary-text" id="summary"></div>
+    </div>
   </div>
-  <div class="card mb" id="repeatCard" style="display:none">
-    <div class="section-title">Tekrar Eden Cümleler</div>
-    <div id="repeats"></div>
-  </div>
-  <div class="card mb" id="expressionsCard" style="display:none">
-    <div class="section-title">İşaretlenen İfadeler</div>
-    <div id="expressions"></div>
-  </div>
-  <div class="card mb">
-    <div class="section-title">Cümle Uzunluk Dağılımı</div>
-    <div class="chart-container"><canvas id="sentenceChart"></canvas></div>
-  </div>
-  <div class="card mb">
-    <div class="section-title">En Sık 12 Kelime</div>
-    <div class="chart-container"><canvas id="wordChart"></canvas></div>
-  </div>
-  <div class="card mb">
-    <div class="section-title">Genel Rapor Özeti</div>
-    <div class="summary-text" id="summary"></div>
+
+  <div class="footer">
+    Metin Diligence Analizörü &middot; CORS Proxy ile web kazıma &middot; Semantik benzerlik analizi &middot; Chart.js
   </div>
 </div>
 
@@ -242,7 +409,6 @@ const STOPWORDS_EN = new Set([
   "their","what","which","who","whom","am"
 ]);
 
-// ===================== EŞ ANLAMLI HARİTASI =====================
 const SYNONYM_GROUPS = [
   ["gelişmek","ilerlemek","büyümek","artmak","yükselmek","genişlemek","gelişim","ilerleme","büyüme","artış","yükseliş","genişleme","geliyor","ilerliyor","artıyor","yükseliyor","gelişti","ilerledi","arttı","yükseldi","gelişme","ilerleme","gelişmektedir","ilerlemektedir"],
   ["önemli","kritik","değerli","önem","kritik","değer","önemlidir","kritiktir","değerlidir","önemli bir","önemli rol","önemli derece","önem arz","önem taşımaktadır"],
@@ -361,58 +527,39 @@ function cosineSimilarity(vecA, vecB) {
 
 let sentenceChartInstance = null;
 let wordChartInstance = null;
+let radarChartInstance = null;
+let lastResults = null;
 
-// ===================== YARDIMCI FONKSİYONLAR =====================
+// ===================== YARDIMCI =====================
 function getSentences(text) {
-  // Önce metni satırlara böl (başlık, liste gibi yapıları ayır)
   const lines = text.split(/\n+/);
   const rawSentences = [];
-
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.length < 5) continue;
-
-    // Başlık satırları (# veya kısa satır) ayrı tutulur, bölünmez
     if (trimmed.startsWith('#') || (trimmed.length < 60 && !trimmed.endsWith('.') && !trimmed.endsWith('!') && !trimmed.endsWith('?'))) {
       rawSentences.push(trimmed);
       continue;
     }
-
-    // Satırı cümlelere böl — nokta, ünlem, soru işareti
-    // Ama kısaltmalarda ve sayılarda bölme
     let protected_text = trimmed;
-
-    // 1. Sayıları koru (1.5, 3.14, 2023. vb.)
     protected_text = protected_text.replace(/(\d)\.(\d)/g, '$1<DOT>$2');
-
-    // 2. Yaygın kısaltmaları koru
-    const abbrevs = ['dr','prof','doç','av','müh','mim','sth','alb','bşk','gen','vs','vb','yk','sgk','tc','tl','usd','eur','gb','mb','tb','dk','sn','gr','kg','cm','mm','km','m²','m³','no','nr','say','sf','sf.','sf','sf'];
+    const abbrevs = ['dr','prof','doç','av','müh','mim','sth','alb','bşk','gen','vs','vb','yk','sgk','tc','tl','usd','eur','gb','mb','tb','dk','sn','gr','kg','cm','mm','km','m²','m³','no','nr','say','sf'];
     abbrevs.forEach(ab => {
       const regex = new RegExp('\\b(' + ab + ')\\.', 'gi');
       protected_text = protected_text.replace(regex, '$1<ABBR>');
     });
-
-    // 3. Tek harf + nokta (A., B., C. gibi) koru
     protected_text = protected_text.replace(/\b([A-Za-zÇçĞğİıÖöŞşÜü])\./g, '$1<ABBR>');
-
-    // 4. Web sitesi URL'lerindeki noktaları koru
     protected_text = protected_text.replace(/https?:\/\/[^\s]+/g, m => m.replace(/\./g, '<DOT>'));
-
-    // 5. Şimdi cümlelere böl
     const parts = protected_text.split(/(?<=[.!?])\s+/);
-
     for (const part of parts) {
-      // Korunan karakterleri geri koy
       let sentence = part.replace(/<DOT>/g, '.').replace(/<ABBR>/g, '.');
       sentence = sentence.trim();
-      // En az 10 karakter ve en az 3 kelime içeren cümleleri al
       const words = sentence.split(/\s+/);
       if (sentence.length >= 10 && words.length >= 3) {
         rawSentences.push(sentence);
       }
     }
   }
-
   return rawSentences;
 }
 
@@ -458,37 +605,48 @@ function scoreColor(score) {
   return 'var(--green)';
 }
 
-function scoreClass(score) {
-  if (score > 60) return 'score-low';
-  if (score >= 30) return 'score-mid';
-  return 'score-high';
+function scoreColorHex(score) {
+  if (score > 60) return '#ef4444';
+  if (score >= 30) return '#f59e0b';
+  return '#22c55e';
 }
 
-// ===================== WEB SCRAPING =====================
+function scoreDesc(score, type) {
+  if (type === 'ai') return score > 60 ? 'Yüksek YZ olasılığı' : score >= 30 ? 'Orta seviye' : 'Düşük olasılık';
+  if (type === 'repeat') return score > 60 ? 'Yüksek tekrar' : score >= 30 ? 'Orta tekrar' : 'Az tekrar';
+  return score > 60 ? 'Yüksek orijinallik' : score >= 30 ? 'Orta seviye' : 'Düşük orijinallik';
+}
+
+// SVG ring
+function ringSVG(score, color, size) {
+  const r = (size - 12) / 2;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (score / 100) * circ;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <circle class="ring-bg" cx="${size/2}" cy="${size/2}" r="${r}"/>
+    <circle class="ring-fill" cx="${size/2}" cy="${size/2}" r="${r}"
+      stroke="${color}" stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/>
+  </svg>`;
+}
+
+// ===================== SCRAPING =====================
 async function fetchWithProxy(url) {
   for (const proxyFn of CORS_PROXIES) {
     try {
-      const proxyUrl = proxyFn(url);
-      const resp = await fetch(proxyUrl, { signal: AbortSignal.timeout(15000) });
+      const resp = await fetch(proxyFn(url), { signal: AbortSignal.timeout(15000) });
       if (!resp.ok) continue;
       return await resp.text();
-    } catch(e) {
-      continue;
-    }
+    } catch(e) { continue; }
   }
-  throw new Error("Tüm proxy sunucuları başarısız oldu.");
+  throw new Error('Tüm proxy sunucuları başarısız oldu.');
 }
 
 function extractCleanText(html) {
-  // Basit HTML parser: script, style, tag'leri temizle
   let text = html;
-  // Script ve style bloklarını kaldır
   text = text.replace(/<script[\s\S]*?<\/script>/gi, '');
   text = text.replace(/<style[\s\S]*?<\/style>/gi, '');
   text = text.replace(/<noscript[\s\S]*?<\/noscript>/gi, '');
-  // HTML tag'lerini kaldır
   text = text.replace(/<[^>]+>/g, ' ');
-  // HTML entity'leri çöz
   text = text.replace(/&nbsp;/g, ' ');
   text = text.replace(/&amp;/g, '&');
   text = text.replace(/&lt;/g, '<');
@@ -496,61 +654,42 @@ function extractCleanText(html) {
   text = text.replace(/&quot;/g, '"');
   text = text.replace(/&#39;/g, "'");
   text = text.replace(/&#[0-9]+;/g, ' ');
-  // Birden fazla boşluğu tek boşluğa indir
   text = text.replace(/\s+/g, ' ');
-  // Satır sonlarını temizle
   text = text.replace(/\n\s*\n/g, '\n\n');
   return text.trim();
 }
 
-// ===================== DURUM BARI =====================
 function setStatus(msg, type) {
   const bar = document.getElementById('statusBar');
   bar.className = 'status-bar visible status-' + type;
-  bar.innerHTML = type === 'loading' ? `<span class="spinner"></span>${msg}` : msg;
+  bar.innerHTML = type === 'loading' ? '<span class="spinner"></span>' + msg : msg;
 }
 
-function hideStatus() {
-  document.getElementById('statusBar').className = 'status-bar';
-}
-
-function setMetaInfo(msg) {
+function setMetaInfo(url, chars) {
   const el = document.getElementById('metaInfo');
   el.className = 'meta-info visible';
-  el.textContent = msg;
+  const readMin = Math.max(1, Math.ceil(chars / 2000));
+  el.innerHTML = '<span>🌐 ' + url + '</span><span>📄 ' + chars + ' karakter</span><span>⏱️ ~' + readMin + ' dk okuma</span>';
 }
 
 // ===================== ANALİZ =====================
 async function fetchAndAnalyze() {
   const url = document.getElementById('urlInput').value.trim();
   if (!url) { setStatus('Lütfen bir URL girin.', 'error'); return; }
-
   const btn = document.getElementById('analyzeBtn');
   btn.disabled = true;
   document.getElementById('results').classList.remove('visible');
-
   setStatus('Web sayfası yükleniyor...', 'loading');
-
   let html;
-  try {
-    html = await fetchWithProxy(url);
-  } catch(e) {
-    setStatus('Hata: ' + e.message, 'error');
-    btn.disabled = false;
-    return;
-  }
-
+  try { html = await fetchWithProxy(url); }
+  catch(e) { setStatus('Hata: ' + e.message, 'error'); btn.disabled = false; return; }
   const text = extractCleanText(html);
   if (text.length < 50) {
-    setStatus('Sayfadan yeterli metin çıkarılamadı (sadece ' + text.length + ' karakter).', 'error');
-    btn.disabled = false;
-    return;
+    setStatus('Sayfadan yeterli metin çıkarılamadı (' + text.length + ' karakter).', 'error');
+    btn.disabled = false; return;
   }
-
   setStatus('Metin çıkarıldı (' + text.length + ' karakter). Analiz yapılıyor...', 'loading');
-  setMetaInfo('URL: ' + url + ' | Çıkarılan metin: ' + text.length + ' karakter');
-
-  // Kısa bir gecikme ile analiz (UI güncellemesi için)
+  setMetaInfo(url, text.length);
   setTimeout(() => {
     runAnalysis(text);
     setStatus('Analiz tamamlandı.', 'success');
@@ -563,16 +702,12 @@ function runAnalysis(text) {
   const sentences = getSentences(text);
   const allWords = getWords(text);
   const filteredWords = getWordsFiltered(text, lang);
-  const clichesTR = lang === 'tr' ? TR_CLICHES : [];
-  const clichesEN = lang === 'en' ? EN_CLICHES : [];
-  const allCliches = [...clichesTR, ...clichesEN];
+  const allCliches = [...(lang === 'tr' ? TR_CLICHES : []), ...(lang === 'en' ? EN_CLICHES : [])];
   const passiveList = lang === 'tr' ? PASSIVE_TR : [];
 
-  // 1. Tipografik karakterler
   let typoCount = 0;
   TYPO_CHARS.forEach(re => { const m = text.match(re); if (m) typoCount += m.length; });
 
-  // 2. Klişe ifadeler
   const foundCliches = [];
   const textLower = text.toLowerCase();
   allCliches.forEach(c => {
@@ -581,87 +716,58 @@ function runAnalysis(text) {
     if (matches) matches.forEach(() => foundCliches.push(c));
   });
 
-  // 3. Pasif yapı
   let passiveCount = 0;
   passiveList.forEach(p => {
     const regex = new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
     const m = text.match(regex);
     if (m) passiveCount += m.length;
   });
-  if (lang === 'en') {
-    const m = text.match(PASSIVE_EN);
-    if (m) passiveCount += m.length;
-  }
+  if (lang === 'en') { const m = text.match(PASSIVE_EN); if (m) passiveCount += m.length; }
 
-  // 4. Liste satırları
   const lines = text.split('\n');
   const listLines = lines.filter(l => /^\s*[-•]\s/.test(l)).length;
-
-  // 5. Markdown başlıkları
   const headingLines = lines.filter(l => /^\s*#{1,6}\s/.test(l)).length;
-
-  // 6. Cümle uzunlukları
   const sentLengths = sentences.map(s => getWords(s).length);
-
-  // 7. TTR
   const uniqueWords = new Set(allWords);
   const ttr = allWords.length > 0 ? uniqueWords.size / allWords.length : 0;
-
-  // 8. Burstiness
   const sd = stdDev(sentLengths);
   const avg = mean(sentLengths);
   const burstiness = avg > 0 ? sd / avg : 0;
 
-  // 9. Jaccard cümle benzerliği
   const sentWordSets = sentences.map(s => new Set(getWordsFiltered(s, lang)));
   const similarPairsJaccard = [];
   for (let i = 0; i < sentWordSets.length; i++) {
     for (let j = i + 1; j < sentWordSets.length; j++) {
       const sim = jaccard(sentWordSets[i], sentWordSets[j]);
-      if (sim >= 0.55) {
-        similarPairsJaccard.push({ a: sentences[i], b: sentences[j], sim: sim, type: 'kelime' });
-      }
+      if (sim >= 0.55) similarPairsJaccard.push({ a: sentences[i], b: sentences[j], sim });
     }
   }
   similarPairsJaccard.sort((a,b) => b.sim - a.sim);
 
-  // 9b. Semantik benzerlik
   const semanticPairs = [];
   for (let i = 0; i < sentences.length; i++) {
     for (let j = i + 1; j < sentences.length; j++) {
       const wordsA = getWordsFiltered(sentences[i], lang);
       const wordsB = getWordsFiltered(sentences[j], lang);
       if (wordsA.length < 2 || wordsB.length < 2) continue;
-      const vecA = getSemanticVector(wordsA);
-      const vecB = getSemanticVector(wordsB);
-      const cosSim = cosineSimilarity(vecA, vecB);
+      const cosSim = cosineSimilarity(getSemanticVector(wordsA), getSemanticVector(wordsB));
       const jacSim = jaccard(sentWordSets[i], sentWordSets[j]);
-      if (cosSim >= 0.30 && jacSim < 0.55) {
-        semanticPairs.push({ a: sentences[i], b: sentences[j], cosSim: cosSim, jacSim: jacSim });
-      }
+      if (cosSim >= 0.30 && jacSim < 0.55) semanticPairs.push({ a: sentences[i], b: sentences[j], cosSim, jacSim });
     }
   }
   semanticPairs.sort((a,b) => b.cosSim - a.cosSim);
 
   const allSimilarPairs = [...similarPairsJaccard, ...semanticPairs];
-  allSimilarPairs.sort((a,b) => (b.sim || b.cosSim) - (a.sim || a.cosSim));
-
-  // 10. Trigram analizi
   const trigramCounts = {};
   for (let i = 0; i <= filteredWords.length - 3; i++) {
     const tri = filteredWords[i] + ' ' + filteredWords[i+1] + ' ' + filteredWords[i+2];
     trigramCounts[tri] = (trigramCounts[tri] || 0) + 1;
   }
-  const repeatedTrigrams = Object.entries(trigramCounts)
-    .filter(([,c]) => c > 1)
-    .sort((a,b) => b[1] - a[1]);
+  const repeatedTrigrams = Object.entries(trigramCounts).filter(([,c]) => c > 1).sort((a,b) => b[1] - a[1]);
 
-  // ===================== SKORLAMA =====================
   let aiScore = 0;
-  if (foundCliches.length >= 3) aiScore += 25;
-  else if (foundCliches.length >= 1) aiScore += 12;
-  if (typoCount >= 3) aiScore += 20;
-  else if (typoCount >= 1) aiScore += 8;
+  if (foundCliches.length >= 3) aiScore += 25; else if (foundCliches.length >= 1) aiScore += 12;
+  if (typoCount >= 3) aiScore += 20; else if (typoCount >= 1) aiScore += 8;
   if (burstiness < 0.45) aiScore += 15;
   if (listLines > 3) aiScore += 10;
   if (headingLines > 2) aiScore += 10;
@@ -671,13 +777,16 @@ function runAnalysis(text) {
 
   let repeatScore = 0;
   repeatScore += Math.min(allSimilarPairs.length * 15, 40);
-  const trigExtra = Math.max(0, repeatedTrigrams.length - 3);
-  repeatScore += Math.min(trigExtra * 8, 30);
+  repeatScore += Math.min(Math.max(0, repeatedTrigrams.length - 3) * 8, 30);
   repeatScore = Math.min(repeatScore, 100);
 
   const originalityScore = Math.max(0, 100 - aiScore - repeatScore * 0.3);
 
-  // ===================== BULGULAR =====================
+  const clichPct = foundCliches.length >= 3 ? 100 : foundCliches.length >= 1 ? 50 : 0;
+  const typoPct = typoCount >= 3 ? 100 : typoCount >= 1 ? 40 : 0;
+  const listPct = listLines > 3 ? 100 : listLines > 0 ? 33 : 0;
+  const passPct = passiveCount > 2 ? 100 : passiveCount > 0 ? 50 : 0;
+
   const findings = [];
   if (foundCliches.length > 0) findings.push({ text: foundCliches.length + ' adet klişe ifade tespit edildi', badge: 'Klişe' });
   if (typoCount > 0) findings.push({ text: typoCount + ' adet tipografik karakter (em dash, akıllı tırnak vb.)', badge: 'YZ İşareti' });
@@ -685,12 +794,11 @@ function runAnalysis(text) {
   if (passiveCount > 0) findings.push({ text: passiveCount + ' adet pasif yapı tespit edildi', badge: 'YZ İşareti' });
   if (listLines > 0) findings.push({ text: listLines + ' adet liste satırı', badge: 'YZ İşareti' });
   if (headingLines > 0) findings.push({ text: headingLines + ' adet markdown başlığı', badge: 'YZ İşareti' });
-  if (similarPairsJaccard.length > 0) findings.push({ text: similarPairsJaccard.length + ' adet kelime bazlı tekrar (aynı kelimeler, >%55)', badge: 'Tekrar' });
-  if (semanticPairs.length > 0) findings.push({ text: semanticPairs.length + ' adet anlamsal tekrar (farklı kelimeler, aynı anlam)', badge: 'Tekrar' });
+  if (similarPairsJaccard.length > 0) findings.push({ text: similarPairsJaccard.length + ' adet kelime bazlı tekrar (aynı kelimeler)', badge: 'Tekrar' });
+  if (semanticPairs.length > 0) findings.push({ text: semanticPairs.length + ' adet anlamsal tekrar (farklı kelimeler, aynı anlam)', badge: 'Anlamsal' });
   if (repeatedTrigrams.length > 0) findings.push({ text: repeatedTrigrams.length + ' adet tekrar eden trigram', badge: 'Tekrar' });
   if (findings.length === 0) findings.push({ text: 'Önemli bir işaret tespit edilmedi', badge: 'Temiz' });
 
-  // ===================== ÖZET =====================
   let summary = '';
   summary += 'Metin ' + allWords.length + ' kelime ve ' + sentences.length + ' cümleden oluşmaktadır. ';
   summary += 'Sözcük çeşitliliği (TTR) %' + (ttr*100).toFixed(1) + ' olarak hesaplanmıştır. ';
@@ -711,9 +819,12 @@ function runAnalysis(text) {
   }
   summary += 'Orijinallik skoru ' + originalityScore.toFixed(0) + '/100 olarak hesaplanmıştır.';
 
-  // ===================== RENDER =====================
+  lastResults = { aiScore, repeatScore, originalityScore, allWords, sentences, ttr, burstiness, similarPairsJaccard, semanticPairs, repeatedTrigrams, findings, summary, foundCliches, typoCount, listLines, passiveCount, allSimilarPairs, sentLengths, filteredWords };
+
+  renderScoreHero(aiScore, repeatScore, originalityScore);
   renderMetrics(allWords.length, sentences.length, ttr, burstiness);
-  renderScores(aiScore, repeatScore, originalityScore, foundCliches, typoCount, listLines, passiveCount, allSimilarPairs, repeatedTrigrams, burstiness);
+  renderRadar(clichPct, typoPct, listPct, passPct, burstiness < 0.45 ? 80 : 20);
+  renderGauges(foundCliches, typoCount, listLines, passiveCount, allSimilarPairs, repeatedTrigrams, burstiness);
   renderFindings(findings);
   renderRepeats(similarPairsJaccard, semanticPairs);
   renderExpressions(foundCliches, repeatedTrigrams);
@@ -722,49 +833,70 @@ function runAnalysis(text) {
   document.getElementById('results').classList.add('visible');
 }
 
-// ===================== RENDER FONKSİYONLARI =====================
-function renderMetrics(wordCount, sentCount, ttr, burstiness) {
-  document.getElementById('metricsRow').innerHTML =
-    '<div class="card"><div class="card-title">Kelime Sayısı</div><div class="metric-value">' + wordCount + '</div></div>' +
-    '<div class="card"><div class="card-title">Cümle Sayısı</div><div class="metric-value">' + sentCount + '</div></div>' +
-    '<div class="card"><div class="card-title">Sözcük Çeşitliliği (TTR)</div><div class="metric-value">' + (ttr*100).toFixed(1) + '%</div><div class="metric-sub">' + (ttr > 0.65 ? 'Zengin' : ttr > 0.45 ? 'Orta' : 'Düşük') + ' kelime çeşitliliği</div></div>' +
-    '<div class="card"><div class="card-title">Cümle Varyansı</div><div class="metric-value">' + burstiness.toFixed(2) + '</div><div class="metric-sub">' + (burstiness < 0.45 ? 'Monoton (YZ işareti)' : 'Çeşitli (İnsan işareti)') + '</div></div>';
+// ===================== RENDER =====================
+function renderScoreHero(ai, repeat, orig) {
+  document.getElementById('scoreHero').innerHTML =
+    '<div class="score-card ai"><div class="score-label">Yapay Zeka Skoru</div><div class="score-ring">' +
+    ringSVG(ai, scoreColorHex(ai), 120) +
+    '<div class="ring-text" style="color:' + scoreColorHex(ai) + '">' + ai + '</div></div><div class="score-desc">' + scoreDesc(ai, 'ai') + '</div></div>' +
+    '<div class="score-card repeat"><div class="score-label">Tekrar Skoru</div><div class="score-ring">' +
+    ringSVG(repeat, scoreColorHex(repeat), 120) +
+    '<div class="ring-text" style="color:' + scoreColorHex(repeat) + '">' + repeat + '</div></div><div class="score-desc">' + scoreDesc(repeat, 'repeat') + '</div></div>' +
+    '<div class="score-card original"><div class="score-label">Orijinallik Skoru</div><div class="score-ring">' +
+    ringSVG(orig, scoreColorHex(orig), 120) +
+    '<div class="ring-text" style="color:' + scoreColorHex(orig) + '">' + orig.toFixed(0) + '</div></div><div class="score-desc">' + scoreDesc(orig, 'original') + '</div></div>';
 }
 
-function renderScores(ai, repeat, originality, cliches, typos, lists, passives, pairs, trigrams, burst) {
-  const clichPct = cliches.length >= 3 ? 100 : cliches.length >= 1 ? 50 : 0;
-  const typoPct = typos >= 3 ? 100 : typos >= 1 ? 40 : 0;
-  const listPct = lists > 3 ? 100 : lists > 0 ? 33 : 0;
-  const passPct = passives > 2 ? 100 : passives > 0 ? 50 : 0;
-  const simPct = pairs.length > 0 ? Math.min(pairs.length * 25, 100) : 0;
-  const trigPct = trigrams.length > 3 ? Math.min((trigrams.length-3)*20, 100) : 0;
-  const varPct = burst < 0.45 ? 80 : burst < 0.7 ? 40 : 10;
+function renderMetrics(wc, sc, ttr, burst) {
+  document.getElementById('metricsRow').innerHTML =
+    '<div class="metric-card"><div class="metric-icon blue">📝</div><div class="metric-body"><div class="metric-val">' + wc.toLocaleString('tr-TR') + '</div><div class="metric-lbl">Kelime</div></div></div>' +
+    '<div class="metric-card"><div class="metric-icon green">💬</div><div class="metric-body"><div class="metric-val">' + sc + '</div><div class="metric-lbl">Cümle</div></div></div>' +
+    '<div class="metric-card"><div class="metric-icon yellow">🔀</div><div class="metric-body"><div class="metric-val">' + (ttr*100).toFixed(1) + '%</div><div class="metric-lbl">Sözcük Çeşitliliği</div></div></div>' +
+    '<div class="metric-card"><div class="metric-icon purple">📐</div><div class="metric-body"><div class="metric-val">' + burst.toFixed(2) + '</div><div class="metric-lbl">Cümle Varyansı</div></div></div>';
+}
 
-  document.getElementById('scoreRow').innerHTML =
-    '<div class="card">' +
-      '<div class="card-title">Yapay Zeka Skoru</div>' +
-      '<div class="metric-value ' + scoreClass(ai) + '">' + ai + '</div>' +
-      '<div class="metric-sub">' + (ai > 60 ? 'Yüksek YZ olasılığı' : ai >= 30 ? 'Orta seviye' : 'Düşük olasılık') + '</div>' +
-      '<div class="gauge-row">' +
-        '<div class="gauge-item"><span class="gauge-label">Klişeler</span><div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:' + clichPct + '%;background:var(--yellow)"></div></div><span class="gauge-val">' + cliches.length + '</span></div>' +
-        '<div class="gauge-item"><span class="gauge-label">Tipografik</span><div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:' + typoPct + '%;background:var(--accent)"></div></div><span class="gauge-val">' + typos + '</span></div>' +
-        '<div class="gauge-item"><span class="gauge-label">Liste</span><div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:' + listPct + '%;background:var(--green)"></div></div><span class="gauge-val">' + lists + '</span></div>' +
-        '<div class="gauge-item"><span class="gauge-label">Pasif Yapı</span><div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:' + passPct + '%;background:var(--red)"></div></div><span class="gauge-val">' + passives + '</span></div>' +
-      '</div></div>' +
-    '<div class="card">' +
-      '<div class="card-title">Orijinallik Skoru</div>' +
-      '<div class="metric-value ' + scoreClass(originality) + '">' + originality.toFixed(0) + '</div>' +
-      '<div class="metric-sub">' + (originality > 60 ? 'Yüksek orijinallik' : originality >= 30 ? 'Orta seviye' : 'Düşük orijinallik') + '</div>' +
-      '<div class="gauge-row">' +
-        '<div class="gauge-item"><span class="gauge-label">Benzer Cümle</span><div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:' + simPct + '%;background:var(--red)"></div></div><span class="gauge-val">' + pairs.length + '</span></div>' +
-        '<div class="gauge-item"><span class="gauge-label">Trigram</span><div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:' + trigPct + '%;background:var(--red)"></div></div><span class="gauge-val">' + trigrams.length + '</span></div>' +
-        '<div class="gauge-item"><span class="gauge-label">Varyans</span><div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:' + varPct + '%;background:var(--accent)"></div></div><span class="gauge-val">' + burst.toFixed(2) + '</span></div>' +
-      '</div></div>';
+function renderRadar(clich, typo, list, pass, mono) {
+  if (radarChartInstance) radarChartInstance.destroy();
+  radarChartInstance = new Chart(document.getElementById('radarChart').getContext('2d'), {
+    type: 'radar',
+    data: {
+      labels: ['Klişeler', 'Tipografik', 'Liste', 'Pasif Yapı', 'Monotonluk'],
+      datasets: [{
+        label: 'AI İşareti',
+        data: [clich, typo, list, pass, mono],
+        backgroundColor: 'rgba(99,102,241,0.15)',
+        borderColor: '#6366f1',
+        borderWidth: 2,
+        pointBackgroundColor: '#6366f1',
+        pointRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { r: { beginAtZero: true, max: 100, ticks: { stepSize: 25, display: false }, grid: { color: 'rgba(0,0,0,0.06)' }, pointLabels: { font: { size: 11 } } } },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+function renderGauges(cliches, typos, lists, passives, pairs, trigrams, burst) {
+  const items = [
+    { label: 'Klişeler', val: cliches.length, pct: cliches.length >= 3 ? 100 : cliches.length >= 1 ? 50 : 0, color: 'var(--yellow)' },
+    { label: 'Tipografik', val: typos, pct: typos >= 3 ? 100 : typos >= 1 ? 40 : 0, color: 'var(--accent)' },
+    { label: 'Liste', val: lists, pct: lists > 3 ? 100 : lists > 0 ? 33 : 0, color: 'var(--green)' },
+    { label: 'Pasif Yapı', val: passives, pct: passives > 2 ? 100 : passives > 0 ? 50 : 0, color: 'var(--red)' },
+    { label: 'Benzer Cümle', val: pairs.length, pct: pairs.length > 0 ? Math.min(pairs.length * 25, 100) : 0, color: 'var(--red)' },
+    { label: 'Trigram', val: trigrams.length, pct: trigrams.length > 3 ? Math.min((trigrams.length-3)*20, 100) : 0, color: 'var(--red)' },
+    { label: 'Varyans', val: burst.toFixed(2), pct: burst < 0.45 ? 80 : burst < 0.7 ? 40 : 10, color: 'var(--accent)' },
+  ];
+  document.getElementById('gauges').innerHTML = '<div class="gauge-row">' + items.map(it =>
+    '<div class="gauge-item"><span class="gauge-label">' + it.label + '</span><div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:' + it.pct + '%;background:' + it.color + '"></div></div><span class="gauge-val">' + it.val + '</span></div>'
+  ).join('') + '</div>';
 }
 
 function renderFindings(findings) {
   document.getElementById('findings').innerHTML = findings.map(f => {
-    const bc = f.badge === 'YZ İşareti' ? 'badge-ai' : f.badge === 'Tekrar' ? 'badge-repeat' : f.badge === 'Klişe' ? 'badge-cliche' : 'badge-clean';
+    const bc = f.badge === 'YZ İşareti' ? 'badge-ai' : f.badge === 'Tekrar' ? 'badge-repeat' : f.badge === 'Klişe' ? 'badge-cliche' : f.badge === 'Anlamsal' ? 'badge-semantic' : 'badge-clean';
     return '<div class="finding-row"><span class="finding-text">' + f.text + '</span><span class="badge ' + bc + '">' + f.badge + '</span></div>';
   }).join('');
 }
@@ -779,7 +911,7 @@ function renderRepeats(jaccardPairs, semanticPairs) {
     html += '<div class="repeat-section"><div class="repeat-section-title" style="color:var(--red)">🔴 Aynı Kelimelerle Tekrar (' + jaccardPairs.length + ' çift)</div>';
     jaccardPairs.slice(0, 20).forEach((p, i) => {
       const pct = Math.round(p.sim * 100);
-      html += '<div class="repeat-pair"><div class="repeat-pct" style="color:' + scoreColor(pct) + '">% ' + pct + ' Kelime Örtüşmesi</div>' +
+      html += '<div class="repeat-pair"><div class="repeat-pct" style="color:' + scoreColorHex(pct) + '">% ' + pct + ' Kelime Örtüşmesi</div>' +
         '<div class="repeat-sent">"' + p.a + '"</div><div class="repeat-sent">"' + p.b + '"</div></div>';
     });
     html += '</div>';
@@ -788,7 +920,7 @@ function renderRepeats(jaccardPairs, semanticPairs) {
     html += '<div class="repeat-section"><div class="repeat-section-title" style="color:var(--yellow)">🟡 Farklı Kelimelerle Aynı Anlam (' + semanticPairs.length + ' çift)</div>';
     semanticPairs.slice(0, 20).forEach((p, i) => {
       const pct = Math.round(p.cosSim * 100);
-      html += '<div class="repeat-pair"><div class="repeat-pct" style="color:' + scoreColor(pct) + '">% ' + pct + ' Anlamsal Benzerlik</div>' +
+      html += '<div class="repeat-pair"><div class="repeat-pct" style="color:' + scoreColorHex(pct) + '">% ' + pct + ' Anlamsal Benzerlik</div>' +
         '<div class="repeat-sent">"' + p.a + '"</div><div class="repeat-sent">"' + p.b + '"</div></div>';
     });
     html += '</div>';
@@ -802,12 +934,12 @@ function renderExpressions(cliches, trigrams) {
   card.style.display = 'block';
   let html = '';
   if (cliches.length > 0) {
-    html += '<div style="margin-bottom:0.8rem"><strong style="font-size:0.85rem;color:var(--text-secondary)">Klişe İfadeler:</strong><div class="pill-container" style="margin-top:0.4rem">';
+    html += '<div style="margin-bottom:0.8rem"><strong style="font-size:0.82rem;color:var(--text-muted)">Klişe İfadeler</strong><div class="pill-container" style="margin-top:0.4rem">';
     [...new Set(cliches)].forEach(c => { html += '<span class="pill pill-cliche">' + c + '</span>'; });
     html += '</div></div>';
   }
   if (trigrams.length > 0) {
-    html += '<div><strong style="font-size:0.85rem;color:var(--text-secondary)">Tekrar Eden Trigramlar:</strong><div class="pill-container" style="margin-top:0.4rem">';
+    html += '<div><strong style="font-size:0.82rem;color:var(--text-muted)">Tekrar Eden Trigramlar</strong><div class="pill-container" style="margin-top:0.4rem">';
     trigrams.slice(0,20).forEach(([tri, count]) => { html += '<span class="pill pill-trigram">' + tri + ' (' + count + '×)</span>'; });
     html += '</div></div>';
   }
@@ -826,8 +958,8 @@ function renderCharts(sentLengths, filteredWords) {
   if (sentenceChartInstance) sentenceChartInstance.destroy();
   sentenceChartInstance = new Chart(document.getElementById('sentenceChart').getContext('2d'), {
     type: 'bar',
-    data: { labels: Object.keys(buckets), datasets: [{ label: 'Cümle Sayısı', data: Object.values(buckets), backgroundColor: ['#639922','#8bc34a','#EF9F27','#f59e0b','#E24B4A'], borderRadius: 4 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    data: { labels: Object.keys(buckets), datasets: [{ label: 'Cümle Sayısı', data: Object.values(buckets), backgroundColor: ['#22c55e','#84cc16','#f59e0b','#f97316','#ef4444'], borderRadius: 6 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.04)' } }, x: { grid: { display: false } } } }
   });
 
   const wordCounts = {};
@@ -836,13 +968,44 @@ function renderCharts(sentLengths, filteredWords) {
   if (wordChartInstance) wordChartInstance.destroy();
   wordChartInstance = new Chart(document.getElementById('wordChart').getContext('2d'), {
     type: 'bar',
-    data: { labels: top12.map(([w]) => w), datasets: [{ label: 'Tekrar Sayısı', data: top12.map(([,c]) => c), backgroundColor: '#6366f1', borderRadius: 4 }] },
-    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    data: { labels: top12.map(([w]) => w), datasets: [{ label: 'Tekrar', data: top12.map(([,c]) => c), backgroundColor: '#6366f1', borderRadius: 6 }] },
+    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.04)' } }, y: { grid: { display: false } } } }
   });
 }
 
 function renderSummary(text) {
   document.getElementById('summary').textContent = text;
+}
+
+function copyResults() {
+  if (!lastResults) return;
+  const r = lastResults;
+  let txt = '=== METIN DILIGENCE ANALIZ RAPORU ===\n\n';
+  txt += 'Yapay Zeka Skoru: ' + r.aiScore + '/100\n';
+  txt += 'Tekrar Skoru: ' + r.repeatScore + '/100\n';
+  txt += 'Orijinallik Skoru: ' + r.originalityScore.toFixed(0) + '/100\n\n';
+  txt += 'Kelime: ' + r.allWords.length + ' | Cümle: ' + r.sentences.length + ' | TTR: %' + (r.ttr*100).toFixed(1) + '\n\n';
+  txt += 'BULGULAR:\n';
+  r.findings.forEach(f => { txt += '- [' + f.badge + '] ' + f.text + '\n'; });
+  if (r.similarPairsJaccard.length > 0) {
+    txt += '\nTEKRAR EDEN CÜMLELER (Kelime):\n';
+    r.similarPairsJaccard.slice(0,10).forEach((p,i) => {
+      txt += (i+1) + '. %' + Math.round(p.sim*100) + '\n   A: ' + p.a + '\n   B: ' + p.b + '\n';
+    });
+  }
+  if (r.semanticPairs.length > 0) {
+    txt += '\nANLAMSAL TEKRARLAR:\n';
+    r.semanticPairs.slice(0,10).forEach((p,i) => {
+      txt += (i+1) + '. %' + Math.round(p.cosSim*100) + '\n   A: ' + p.a + '\n   B: ' + p.b + '\n';
+    });
+  }
+  txt += '\n' + r.summary;
+  navigator.clipboard.writeText(txt).then(() => {
+    const btn = document.querySelector('.copy-row .btn');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✓ Kopyalandı';
+    setTimeout(() => { btn.innerHTML = orig; }, 2000);
+  });
 }
 </script>
 </body>
