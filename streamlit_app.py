@@ -4,13 +4,14 @@ import re
 import numpy as np
 import pandas as pd
 from collections import Counter
+import math
 
 # ============================================================
 # SAYFA YAPILANDIRMASI
 # ============================================================
 st.set_page_config(
-    page_title="AI Site Dedektifi",
-    page_icon="🔍",
+    page_title="İçerik Analiz Uzmanı",
+    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -34,27 +35,39 @@ st.markdown(
         color: #6b7280;
         margin-bottom: 2rem;
     }
-    .verdict-box {
-        padding: 1.2rem 1.5rem;
-        border-radius: 12px;
-        margin: 1rem 0;
-        font-size: 1.1rem;
-        font-weight: 600;
+    .score-card {
+        padding: 1.5rem;
+        border-radius: 16px;
+        margin: 0.8rem 0;
+        text-align: center;
     }
-    .verdict-ai {
-        background: linear-gradient(135deg, #fef2f2, #fee2e2);
-        border: 2px solid #fca5a5;
-        color: #991b1b;
-    }
-    .verdict-maybe {
-        background: linear-gradient(135deg, #fffbeb, #fef3c7);
-        border: 2px solid #fcd34d;
-        color: #92400e;
-    }
-    .verdict-human {
+    .score-high {
         background: linear-gradient(135deg, #f0fdf4, #dcfce7);
         border: 2px solid #86efac;
-        color: #166534;
+    }
+    .score-mid {
+        background: linear-gradient(135deg, #fffbeb, #fef3c7);
+        border: 2px solid #fcd34d;
+    }
+    .score-low {
+        background: linear-gradient(135deg, #fef2f2, #fee2e2);
+        border: 2px solid #fca5a5;
+    }
+    .metric-label {
+        font-size: 0.85rem;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+    }
+    .metric-value {
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin: 0.3rem 0;
+    }
+    .metric-desc {
+        font-size: 0.85rem;
+        color: #9ca3af;
     }
 </style>
 """,
@@ -376,7 +389,6 @@ TURKISH_STOPWORDS = {
     "nerede",
     "niçin",
     "niye",
-    "o",
     "olan",
     "olarak",
     "oldukça",
@@ -476,81 +488,89 @@ TURKISH_STOPWORDS = {
     "bizim",
     "senin",
     "onun",
+    "hem",
+    "de",
+    "da",
+    "ki",
+    "mi",
+    "mı",
+    "mu",
+    "mü",
+    "ile",
+    "ve",
+    "veya",
+    "ya",
+    "yahut",
+    "ama",
+    "fakat",
+    "çünkü",
+    "çünki",
+    "madem",
+    "meğer",
+    "meğerse",
+    "ne",
+    "nasıl",
+    "nere",
+    "neden",
+    "niçin",
+    "niye",
+    "hangi",
+    "kim",
+    "kaç",
+    "ne",
+    "hangi",
+    "bu",
+    "şu",
+    "o",
+    "bunlar",
+    "şunlar",
+    "onlar",
+    "ben",
+    "sen",
+    "biz",
+    "siz",
+    "kendim",
+    "kendin",
+    "kendi",
+    "kendimiz",
+    "kendiniz",
+    "bana",
+    "sana",
+    "ona",
+    "bize",
+    "size",
+    "benden",
+    "senden",
+    "ondan",
+    "bizden",
+    "sizden",
+    "beni",
+    "seni",
+    "onu",
+    "bizi",
+    "sizi",
+    "bizim",
+    "senin",
+    "onun",
 }
 
 # ============================================================
-# AI KLİŞE KALIPLARI
-# ============================================================
-AI_CLICHES = [
-    "sonuç olarak",
-    "özetle",
-    "şunu belirtmekte fayda var",
-    "bu bağlamda",
-    "önemli bir rol oynar",
-    "günümüz dünyasında",
-    "unutmamak gerekir ki",
-    "öne çıkmaktadır",
-    "büyük önem arz etmektedir",
-    "tartışılmaktadır",
-    "göz önünde bulundurulmalıdır",
-    "kapsamlı bir şekilde",
-    "detaylı bir şekilde",
-    "oldukça önemlidir",
-    "büyük bir kısmı",
-    "bu nedenle",
-    "bu açıdan",
-    "bu noktada",
-    "diğer yandan",
-    "her ne kadar",
-    "aynı zamanda",
-    "bir başka deyişle",
-    "kısacası",
-    "özetlemek gerekirse",
-    "sonuç olarak söyleyebiliriz ki",
-    "bu da gösteriyor ki",
-    "yadsınamaz bir gerçektir ki",
-    "şüphesiz ki",
-    "kuşkusuz",
-    "malumdur ki",
-]
-
-# ============================================================
-# YAYGIN TÜRKÇE YAZIM HATALARI (Java gerektirmeyen kontrol)
+# YAYGIN TÜRKÇE YAZIM HATALARI
 # ============================================================
 SPELLING_RULES = [
-    # (regex_pattern, dogru_yazi, aciklama)
-    (r"\bde\s+ki\b", "de ki", '"de" ve "ki" ayrı yazılmalı'),
-    (r"\bda\s+ki\b", "da ki", '"da" ve "ki" ayrı yazılmalı'),
-    (r"\bki\s+de\b", "ki de", '"ki" ve "de" ayrı yazılmalı'),
-    (r"\bki\s+da\b", "ki da", '"ki" ve "da" ayrı yazılmalı'),
-    (r"\bmi\s+de\b", "mi de", '"mi" ve "de" ayrı yazılmalı'),
-    (r"\bmi\s+ki\b", "mi ki", '"mi" ve "ki" ayrı yazılmalı'),
-    (r"\bherkez\b", "herkes", "Doğru yazımı: herkes"),
-    (r"\bherkesin\b", "herkesin", None),
     (r"\bherşey\b", "her şey", "Doğru yazımı: her şey (ayrı)"),
     (r"\bhersey\b", "her şey", "Doğru yazımı: her şey"),
     (r"\bbugun\b", "bugün", "Doğru yazımı: bugün"),
-    (r"\byarın\b", "yarın", None),
     (r"\byarin\b", "yarın", "Doğru yazımı: yarın"),
-    (r"\bbugün\b", "bugün", None),
-    (r"\bgüzel\b", "güzel", None),
     (r"\byanlız\b", "yalnız", "Doğru yazımı: yalnız"),
     (r"\byalnış\b", "yanlış", "Doğru yazımı: yanlış"),
-    (r"\byalniz\b", "yalnız", "Doğru yazımı: yalnız (İngilizce klavye)"),
+    (r"\byalniz\b", "yalnız", "Doğru yazımı: yalnız"),
     (r"\bcok\b", "çok", "Doğru yazımı: çok"),
-    (r"\bcoktan\b", "çoktan", None),
-    (r"\bguzel\b", "güzel", "Doğru yazımı: güzel (İngilizce klavye)"),
-    (r"\bsey\b", "şey", "Doğru yazımı: şey (bağımsız kelime olarak)"),
-    (r"\bşey\b", "şey", None),
-    (r"\bniye\b", "niye", None),
-    (r"\bnicün\b", "niçün", None),
+    (r"\bguzel\b", "güzel", "Doğru yazımı: güzel"),
     (r"\byapıcam\b", "yapacağım", "Doğru yazımı: yapacağım"),
     (r"\bedicem\b", "edeceğim", "Doğru yazımı: edeceğim"),
     (r"\bapacık\b", "apaçık", "Doğru yazımı: apaçık"),
-    (r"\bapçık\b", "apaçık", "Doğru yazımı: apaçık"),
-    (r"\bherhalde\b", "herhalde", None),
     (r"\bherhâlde\b", "herhalde", "Doğru yazımı: herhalde"),
-    (r"\bbi\b", "bir", '"bi" yerine "bir" yazılmalı (bağımsız kelime)'),
     (r"\bnapıcam\b", "ne yapacağım", "Doğru yazımı: ne yapacağım"),
     (r"\bnabıcam\b", "ne yapacağım", "Doğru yazımı: ne yapacağım"),
     (r"\bnapıyorsun\b", "ne yapıyorsun", "Doğru yazımı: ne yapıyorsun"),
@@ -562,19 +582,15 @@ SPELLING_RULES = [
     (r"\balmıom\b", "almıyorum", "Doğru yazımı: almıyorum"),
     (r"\balmıyom\b", "almıyorum", "Doğru yazımı: almıyorum"),
     (r"\bdüşünüom\b", "düşünüyorum", "Doğru yazımı: düşünüyorum"),
-    (r"\böğrencileri\b", "öğrencileri", None),
     (r"\bögretmen\b", "öğretmen", "Doğru yazımı: öğretmen"),
-    (r"\bokul\b", "okul", None),
-    (r"\bkitap\b", "kitap", None),
     (r"\bıngilizce\b", "İngilizce", "Doğru yazımı: İngilizce"),
-    (r"\bingilizce\b", "İngilizce", "Doğru yazımı: İngilizce (büyük harf)"),
-    (r"\balmanca\b", "Almanca", "Doğru yazımı: Almanca (büyük harf)"),
-    (r"\bfransızca\b", "Fransızca", "Doğru yazımı: Fransızca (büyük harf)"),
-    (r"\btürkçe\b", "Türkçe", "Doğru yazımı: Türkçe (büyük harf)"),
-    (r"\barapça\b", "Arapça", "Doğru yazımı: Arapça (büyük harf)"),
-    (r"\bistanbul\b", "İstanbul", "Doğru yazımı: İstanbul (büyük harf)"),
-    (r"\bankara\b", "Ankara", "Doğru yazımı: Ankara (büyük harf)"),
-    (r"\bızmır\b", "İzmir", "Doğru yazımı: İzmir"),
+    (r"\bingilizce\b", "İngilizce", "Doğru yazımı: İngilizce"),
+    (r"\balmanca\b", "Almanca", "Doğru yazımı: Almanca"),
+    (r"\bfransızca\b", "Fransızca", "Doğru yazımı: Fransızca"),
+    (r"\btürkçe\b", "Türkçe", "Doğru yazımı: Türkçe"),
+    (r"\barapça\b", "Arapça", "Doğru yazımı: Arapça"),
+    (r"\bistanbul\b", "İstanbul", "Doğru yazımı: İstanbul"),
+    (r"\bankara\b", "Ankara", "Doğru yazımı: Ankara"),
     (r"\bızmir\b", "İzmir", "Doğru yazımı: İzmir"),
 ]
 
@@ -597,194 +613,408 @@ def scrape_url(url):
             downloaded, include_comments=False, include_tables=True
         )
         if not text or len(text.strip()) < 50:
-            return (
-                None,
-                "Sayfadan yeterli metin içeriği çıkarılamadı. Sayfa çok az metin içerebilir.",
-            )
+            return None, "Sayfadan yeterli metin içeriği çıkarılamadı."
         return text.strip(), None
     except Exception as e:
         return None, f"Scraping sırasında bir hata oluştu: {str(e)}"
 
 
-def detect_markdown_izleri(text):
-    """Metindeki ham markdown formatlama izlerini tespit eder."""
-    patterns = {
-        "Kalın yazım (**text**)": r"\*\*.+?\*\*",
-        "Altı çizili (__text__)": r"__.+?__",
-        "Eğik yazı (*text*)": r"(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)",
-        "Başlık (###)": r"#{1,6}\s",
-        "Kod bloğu (```)": r"```[\s\S]*?```",
-        "Satır içi kod (`text`)": r"`[^`]+`",
-        "Madde işareti (- ile)": r"(?m)^\s*-\s",
-        "Numaralı liste": r"(?m)^\s*\d+\.\s",
+def get_sentences(text):
+    """Metni cümlelere böler."""
+    sentences = re.split(r"[.!?]+", text)
+    return [s.strip() for s in sentences if s.strip() and len(s.strip()) > 5]
+
+
+def get_words(text, include_stopwords=True):
+    """Metni kelimelere böler."""
+    cleaned = re.sub(r"[^\w\s]", "", text.lower())
+    words = cleaned.split()
+    if not include_stopwords:
+        words = [w for w in words if w not in TURKISH_STOPWORDS and len(w) > 2]
+    return words
+
+
+def get_paragraphs(text):
+    """Metni paragraflara böler."""
+    paragraphs = text.split("\n\n")
+    return [p.strip() for p in paragraphs if p.strip() and len(p.strip()) > 20]
+
+
+# ============================================================
+# ANALİZ 1: KELİME ÇEŞİTLİLİĞİ (Lexical Diversity)
+# ============================================================
+def analyze_lexical_diversity(text):
+    """
+    Metnin kelime çeşitliliğini analiz eder.
+    TTR (Type-Token Ratio), MTLD (Measure of Textual Lexical Diversity)
+    """
+    words = get_words(text, include_stopwords=False)
+    total_tokens = len(words)
+
+    if total_tokens == 0:
+        return {"error": "Yeterli kelime bulunamadı"}
+
+    unique_types = len(set(words))
+
+    # TTR: Tip-Token Oranı (1'e yakın = zengin kelime dağarcığı)
+    ttr = unique_types / total_tokens
+
+    # Kelime tekrar oranı
+    word_counts = Counter(words)
+    repeated_words = {w: c for w, c in word_counts.items() if c > 1}
+    repeated_count = sum(repeated_words.values())
+    repetition_rate = (repeated_count / total_tokens) * 100
+
+    # En çok tekrar eden kelimeler
+    top_repeated = word_counts.most_common(20)
+
+    # Hapax Legomena (sadece 1 kez geçen kelimeler)
+    hapax = [w for w, c in word_counts.items() if c == 1]
+    hapax_ratio = len(hapax) / total_tokens
+
+    # Ortalama kelime tekrar sayısı
+    avg_repetition = total_tokens / unique_types if unique_types > 0 else 0
+
+    # Kelime uzunluk dağılımı
+    word_lengths = [len(w) for w in words]
+    avg_word_length = np.mean(word_lengths)
+    std_word_length = np.std(word_lengths)
+
+    # Çeşitlilik skoru (0-100)
+    # TTR ağırlıklı ama metin uzunluğuna normalize edilmiş
+    if total_tokens < 100:
+        diversity_score = min(ttr * 100, 100)
+    else:
+        # Uzun metinlerde TTR doğal olarak düşer, MTLD benzeri yaklaşım
+        diversity_score = min((ttr * 2 + hapax_ratio) * 30, 100)
+
+    return {
+        "total_tokens": total_tokens,
+        "unique_types": unique_types,
+        "ttr": round(ttr, 4),
+        "repetition_rate": round(repetition_rate, 1),
+        "top_repeated": top_repeated,
+        "hapax_count": len(hapax),
+        "hapax_ratio": round(hapax_ratio, 4),
+        "avg_repetition": round(avg_repetition, 2),
+        "avg_word_length": round(avg_word_length, 2),
+        "std_word_length": round(std_word_length, 2),
+        "diversity_score": round(diversity_score, 1),
+        "repeated_words": repeated_words,
     }
 
-    detections = {}
-    total_count = 0
-    for label, pattern in patterns.items():
-        matches = re.findall(pattern, text)
-        count = len(matches)
-        detections[label] = count
-        total_count += count
 
-    return detections, total_count
-
-
-def analyze_cliches(text):
-    """Metindeki AI klişe kalıplarını sayar."""
-    text_lower = text.lower()
-    found_cliches = {}
-
-    for cliche in AI_CLICHES:
-        count = len(re.findall(re.escape(cliche), text_lower))
-        if count > 0:
-            found_cliches[cliche] = count
-
-    return found_cliches
-
-
-def analyze_burstiness(text):
-    """Cümle uzunluklarının standart sapmasını hesaplar."""
-    sentences = re.split(r"[.!?]+", text)
-    sentences = [s.strip() for s in sentences if s.strip()]
+# ============================================================
+# ANALİZ 2: CÜMLE ÇEŞİTLİLİĞİ VE YAPI
+# ============================================================
+def analyze_sentence_structure(text):
+    """Cümle uzunluk dağılımı, çeşitlilik ve yapı analizi."""
+    sentences = get_sentences(text)
 
     if len(sentences) < 3:
-        return {
-            "sentence_count": len(sentences),
-            "std_dev": 0,
-            "mean_length": 0,
-            "label": "Yetersiz Veri",
-            "description": "Analiz için yeterli cümle bulunamadı.",
-        }
+        return {"error": "Yeterli cümle bulunamadı"}
 
-    word_counts = [len(s.split()) for s in sentences]
+    # Cümle uzunlukları (kelime bazlı)
+    sentence_lengths = [len(s.split()) for s in sentences]
 
-    std_dev = np.std(word_counts)
-    mean_length = np.mean(word_counts)
+    # İstatistikler
+    mean_len = np.mean(sentence_lengths)
+    std_len = np.std(sentence_lengths)
+    median_len = np.median(sentence_lengths)
+    min_len = min(sentence_lengths)
+    max_len = max(sentence_lengths)
+    range_len = max_len - min_len
 
-    if std_dev < 3:
-        label = "Robotik / Tekdüze"
-        description = "Cümle uzunlukları çok benzer. Bu, AI tarafından üretilmiş metinlere özgü bir özelliktir."
-    elif std_dev < 6:
-        label = "Orta Seviye"
-        description = (
-            "Cümle uzunluklarında orta düzeyde çeşitlilik var. Kesin bir yargı zor."
-        )
+    # Cümle uzunluk dağılımı
+    length_distribution = Counter()
+    for length in sentence_lengths:
+        if length <= 5:
+            length_distribution["Çok Kısa (1-5)"] += 1
+        elif length <= 10:
+            length_distribution["Kısa (6-10)"] += 1
+        elif length <= 20:
+            length_distribution["Orta (11-20)"] += 1
+        elif length <= 30:
+            length_distribution["Uzun (21-30)"] += 1
+        else:
+            length_distribution["Çok Uzun (30+)"] += 1
+
+    # Cümle çeşitlilik skoru
+    # Standart sapma ne kadar yüksekse cümleler o kadar çeşitli
+    if std_len < 3:
+        variety_score = 20
+    elif std_len < 5:
+        variety_score = 40
+    elif std_len < 8:
+        variety_score = 65
+    elif std_len < 12:
+        variety_score = 85
     else:
-        label = "İnsansı / Çeşitli"
-        description = "Cümle uzunlukları doğal çeşitlilik gösteriyor. Bu, insan yazımına özgü bir özelliktir."
+        variety_score = 100
+
+    # En uzun ve en kısa cümleler
+    longest_idx = sentence_lengths.index(max_len)
+    shortest_idx = sentence_lengths.index(min_len)
 
     return {
         "sentence_count": len(sentences),
-        "std_dev": round(float(std_dev), 2),
-        "mean_length": round(float(mean_length), 1),
-        "label": label,
-        "description": description,
-        "word_counts": word_counts,
+        "mean_length": round(mean_len, 1),
+        "std_length": round(std_len, 2),
+        "median_length": round(median_len, 1),
+        "min_length": min_len,
+        "max_length": max_len,
+        "range_length": range_len,
+        "length_distribution": dict(length_distribution),
+        "variety_score": round(variety_score, 1),
+        "longest_sentence": sentences[longest_idx][:200],
+        "shortest_sentence": sentences[shortest_idx][:200],
+        "sentence_lengths": sentence_lengths,
     }
 
 
-def calculate_ai_score(
-    markdown_count, cliche_count, burstiness_std, word_count, spelling_error_count
-):
+# ============================================================
+# ANALİZ 3: CÜMLE BENZERLİĞİ (TEKRAR EDEN FİKİRLER)
+# ============================================================
+def analyze_sentence_similarity(text):
     """
-    Markdown izleri, klişeler, tekdüzelik ve yazım hatalarına göre
-    0-100 arası AI olma ihtimali skoru hesaplar.
+    Aynı veya çok benzer şeyleri söyleyen cümleleri tespit eder.
+    N-gram overlap ve kelime kesişimi kullanır.
     """
-    # Markdown skoru (0-100)
-    if markdown_count == 0:
-        md_score = 0
-    elif markdown_count <= 3:
-        md_score = 25
-    elif markdown_count <= 8:
-        md_score = 55
-    else:
-        md_score = 100
+    sentences = get_sentences(text)
 
-    # Klişe skoru (0-100)
-    if cliche_count == 0:
-        cliche_score = 0
-    elif cliche_count <= 2:
-        cliche_score = 20
-    elif cliche_count <= 5:
-        cliche_score = 50
-    elif cliche_count <= 10:
-        cliche_score = 75
-    else:
-        cliche_score = 100
+    if len(sentences) < 3:
+        return {"error": "Yeterli cümle bulunamadı"}
 
-    # Burstiness skoru (0-100) - düşük sapma = yüksek AI
-    if burstiness_std < 2:
-        burst_score = 90
-    elif burstiness_std < 4:
-        burst_score = 70
-    elif burstiness_std < 6:
-        burst_score = 45
-    elif burstiness_std < 8:
-        burst_score = 25
-    else:
-        burst_score = 10
+    # Her cümleyi kelime setine dönüştür (stopword hariç)
+    sentence_word_sets = []
+    for s in sentences:
+        words = set(get_words(s, include_stopwords=False))
+        sentence_word_sets.append(words)
 
-    # Yazım hatası skoru (0-100) - çok az hata + uzun metin = AI şüphesi
-    if word_count >= 500 and spelling_error_count == 0:
-        spelling_score = 70
-    elif word_count >= 300 and spelling_error_count <= 1:
-        spelling_score = 50
-    elif spelling_error_count == 0:
-        spelling_score = 30
-    else:
-        spelling_score = 10
+    # İkili benzerlik hesapla (Jaccard similarity)
+    similar_pairs = []
+    n = len(sentences)
 
-    # Ağırlıklı toplam: Markdown %20, Klişeler %35, Burstiness %30, Yazım %15
-    final_score = (
-        (md_score * 0.20)
-        + (cliche_score * 0.35)
-        + (burst_score * 0.30)
-        + (spelling_score * 0.15)
-    )
+    for i in range(n):
+        for j in range(i + 1, n):
+            set_a = sentence_word_sets[i]
+            set_b = sentence_word_sets[j]
+
+            if len(set_a) == 0 or len(set_b) == 0:
+                continue
+
+            # Jaccard benzerliği
+            intersection = len(set_a & set_b)
+            union = len(set_a | set_b)
+            jaccard = intersection / union if union > 0 else 0
+
+            # Kelime kesişim oranı (daha hassas)
+            overlap_ratio = (
+                intersection / min(len(set_a), len(set_b))
+                if min(len(set_a), len(set_b)) > 0
+                else 0
+            )
+
+            # Ortak kelimeler
+            common_words = set_a & set_b
+
+            if jaccard >= 0.15 or overlap_ratio >= 0.3:
+                similar_pairs.append(
+                    {
+                        "sentence_a": sentences[i][:150]
+                        + ("..." if len(sentences[i]) > 150 else ""),
+                        "sentence_b": sentences[j][:150]
+                        + ("..." if len(sentences[j]) > 150 else ""),
+                        "jaccard": round(jaccard, 3),
+                        "overlap_ratio": round(overlap_ratio, 3),
+                        "common_words": ", ".join(list(common_words)[:10]),
+                        "common_count": len(common_words),
+                    }
+                )
+
+    # Benzerliklere göre sırala
+    similar_pairs.sort(key=lambda x: x["jaccard"], reverse=True)
+
+    # Tekrar oranı
+    total_pairs = n * (n - 1) // 2
+    highly_similar = sum(1 for p in similar_pairs if p["jaccard"] >= 0.25)
+    moderately_similar = sum(1 for p in similar_pairs if 0.15 <= p["jaccard"] < 0.25)
+
+    # Benzersizlik skoru
+    if total_pairs > 0:
+        similarity_rate = len(similar_pairs) / total_pairs
+        uniqueness_score = max(0, round((1 - similarity_rate) * 100, 1))
+    else:
+        uniqueness_score = 100
 
     return {
-        "total": round(final_score, 1),
-        "markdown_score": md_score,
-        "cliche_score": cliche_score,
-        "burstiness_score": burst_score,
-        "spelling_score": spelling_score,
+        "similar_pairs": similar_pairs[:30],  # En fazla 30 çift göster
+        "total_similar_pairs": len(similar_pairs),
+        "highly_similar": highly_similar,
+        "moderately_similar": moderately_similar,
+        "total_comparisons": total_pairs,
+        "uniqueness_score": uniqueness_score,
     }
 
 
-def get_verdict(score):
-    """AI skoruna göre net karar verir."""
-    if score >= 70:
-        return "AI", "Bu metin büyük olasılıkla yapay zeka tarafından üretilmiştir."
-    elif score >= 40:
-        return (
-            "BELİRSİZ",
-            "Bu metin hem AI hem insan tarafından üretilmiş olabilir. Kesin bir yargı için daha fazla analiz gerekir.",
-        )
+# ============================================================
+# ANALİZ 4: İÇERİK YAPISI VE DERİNLİK
+# ============================================================
+def analyze_content_structure(text):
+    """İçeriğin yapısal derinliğini ve organizasyonunu analiz eder."""
+    paragraphs = get_paragraphs(text)
+    sentences = get_sentences(text)
+    words = get_words(text, include_stopwords=False)
+
+    # Paragraf analizi
+    paragraph_lengths = [len(p.split()) for p in paragraphs]
+    avg_paragraph_length = np.mean(paragraph_lengths) if paragraph_lengths else 0
+    std_paragraph_length = np.std(paragraph_lengths) if paragraph_lengths else 0
+
+    # Başlık tespiti (kısa satırlar)
+    lines = text.split("\n")
+    potential_headings = [
+        l.strip()
+        for l in lines
+        if 3 < len(l.strip()) < 60 and not l.strip().endswith((".", "!", "?", ","))
+    ]
+
+    # İçerik yoğunluğu
+    total_chars = len(text)
+    total_words = len(words)
+    avg_word_length = np.mean([len(w) for w in words]) if words else 0
+
+    # Yapı skoru
+    structure_score = 0
+
+    # Paragraf sayısı (ideal: 5-20 arası)
+    if 5 <= len(paragraphs) <= 20:
+        structure_score += 25
+    elif len(paragraphs) > 20:
+        structure_score += 20
+    elif len(paragraphs) >= 3:
+        structure_score += 15
     else:
-        return "İNSAN", "Bu metin büyük olasılıkla insan tarafından yazılmıştır."
+        structure_score += 5
+
+    # Paragraf uzunluk tutarlılığı
+    if std_paragraph_length < avg_paragraph_length * 0.5:
+        structure_score += 25
+    elif std_paragraph_length < avg_paragraph_length:
+        structure_score += 15
+    else:
+        structure_score += 5
+
+    # Başlık varlığı
+    if len(potential_headings) >= 2:
+        structure_score += 25
+    elif len(potential_headings) >= 1:
+        structure_score += 15
+    else:
+        structure_score += 5
+
+    # İçerik uzunluğu
+    if total_words >= 500:
+        structure_score += 25
+    elif total_words >= 200:
+        structure_score += 20
+    elif total_words >= 100:
+        structure_score += 10
+    else:
+        structure_score += 5
+
+    return {
+        "paragraph_count": len(paragraphs),
+        "avg_paragraph_length": round(avg_paragraph_length, 1),
+        "std_paragraph_length": round(std_paragraph_length, 1),
+        "potential_headings": potential_headings[:10],
+        "heading_count": len(potential_headings),
+        "total_chars": total_chars,
+        "total_words": total_words,
+        "avg_word_length": round(avg_word_length, 2),
+        "structure_score": min(structure_score, 100),
+        "paragraph_lengths": paragraph_lengths,
+    }
 
 
-def analyze_word_frequency(text):
-    """Noktalama ve stopword temizleyerek en çok tekrar eden 10 kelimeyi bulur."""
-    cleaned = re.sub(r"[^\w\s]", "", text.lower())
-    words = cleaned.split()
-    filtered_words = [w for w in words if w not in TURKISH_STOPWORDS and len(w) > 2]
-    counter = Counter(filtered_words)
-    top_10 = counter.most_common(10)
-    return top_10, len(words), len(filtered_words)
+# ============================================================
+# ANALİZ 5: OKUNABİLİRLİK
+# ============================================================
+def analyze_readability(text):
+    """Metnin okunabilirlik seviyesini hesaplar."""
+    sentences = get_sentences(text)
+    words = get_words(text, include_stopwords=False)
+
+    if len(sentences) < 2 or len(words) < 10:
+        return {"error": "Yeterli veri yok"}
+
+    avg_sentence_length = len(words) / len(sentences)
+    avg_word_length = np.mean([len(w) for w in words])
+
+    # Uzun kelime oranı (7+ karakter)
+    long_words = [w for w in words if len(w) >= 7]
+    long_word_ratio = len(long_words) / len(words)
+
+    # Okunabilirlik skoru
+    # Kısa cümle + kısa kelimeler = daha okunabilir
+    readability_score = 100
+
+    # Cümle uzunluğu cezası
+    if avg_sentence_length > 25:
+        readability_score -= 30
+    elif avg_sentence_length > 20:
+        readability_score -= 15
+    elif avg_sentence_length > 15:
+        readability_score -= 5
+
+    # Kelime uzunluğu cezası
+    if avg_word_length > 7:
+        readability_score -= 25
+    elif avg_word_length > 6:
+        readability_score -= 15
+    elif avg_word_length > 5:
+        readability_score -= 5
+
+    # Uzun kelime oranı cezası
+    if long_word_ratio > 0.4:
+        readability_score -= 20
+    elif long_word_ratio > 0.3:
+        readability_score -= 10
+
+    readability_score = max(0, readability_score)
+
+    # Seviye belirleme
+    if readability_score >= 80:
+        level = "Kolay"
+        level_desc = "Genel okuyucu kitlesi için rahatça okunabilir."
+    elif readability_score >= 60:
+        level = "Orta"
+        level_desc = "Orta eğitim seviyesindeki okuyucular için uygun."
+    elif readability_score >= 40:
+        level = "Zor"
+        level_desc = "Akademik veya teknik dil içeriyor."
+    else:
+        level = "Çok Zor"
+        level_desc = "Ağır terminoloji ve uzun cümleler içeriyor."
+
+    return {
+        "avg_sentence_length": round(avg_sentence_length, 1),
+        "avg_word_length": round(avg_word_length, 2),
+        "long_word_ratio": round(long_word_ratio, 3),
+        "long_word_count": len(long_words),
+        "readability_score": round(readability_score, 1),
+        "level": level,
+        "level_desc": level_desc,
+    }
 
 
-def check_spelling_native(text):
-    """
-    Java gerektirmeyen yerleşik Türkçe yazım kontrolü.
-    Yaygın hataları regex kurallarıyla tespit eder.
-    """
+# ============================================================
+# ANALİZ 6: YAZIM DENETİMİ
+# ============================================================
+def check_spelling(text):
+    """Yerleşik Türkçe yazım kuralları ile yazım denetimi."""
     errors = []
     for pattern, correct, message in SPELLING_RULES:
-        # message None ise bu bir "doğru" kelime, hata olarak sayma
-        if message is None:
-            continue
         matches = list(re.finditer(pattern, text, re.IGNORECASE))
         for match in matches:
             errors.append(
@@ -800,14 +1030,90 @@ def check_spelling_native(text):
 
 
 # ============================================================
+# ANALİZ 7: KELİME DAĞILIM GRAFİĞİ
+# ============================================================
+def analyze_word_distribution(text):
+    """Kelime frekans dağılımını detaylı analiz eder."""
+    words = get_words(text, include_stopwords=False)
+    word_counts = Counter(words)
+
+    # Frekans dağılımı
+    freq_values = list(word_counts.values())
+    if freq_values:
+        freq_mean = np.mean(freq_values)
+        freq_std = np.std(freq_values)
+        freq_median = np.median(freq_values)
+    else:
+        freq_mean = freq_std = freq_median = 0
+
+    # Zipf analizi: En sık kelimelerin toplam içindeki payı
+    total = sum(freq_values)
+    top_5_share = (
+        sum(c for _, c in word_counts.most_common(5)) / total * 100 if total > 0 else 0
+    )
+    top_10_share = (
+        sum(c for _, c in word_counts.most_common(10)) / total * 100 if total > 0 else 0
+    )
+    top_20_share = (
+        sum(c for _, c in word_counts.most_common(20)) / total * 100 if total > 0 else 0
+    )
+
+    # Tekrarlı kelime grupları
+    repeated_2x = sum(1 for c in freq_values if c == 2)
+    repeated_3x = sum(1 for c in freq_values if c == 3)
+    repeated_5x_plus = sum(1 for c in freq_values if c >= 5)
+    repeated_10x_plus = sum(1 for c in freq_values if c >= 10)
+
+    return {
+        "word_counts": word_counts,
+        "freq_mean": round(freq_mean, 2),
+        "freq_std": round(freq_std, 2),
+        "freq_median": round(freq_median, 1),
+        "top_5_share": round(top_5_share, 1),
+        "top_10_share": round(top_10_share, 1),
+        "top_20_share": round(top_20_share, 1),
+        "repeated_2x": repeated_2x,
+        "repeated_3x": repeated_3x,
+        "repeated_5x_plus": repeated_5x_plus,
+        "repeated_10x_plus": repeated_10x_plus,
+    }
+
+
+# ============================================================
+# GENEL EMEK / ÇALIŞKANLIK SKORU
+# ============================================================
+def calculate_effort_score(lexical, sentence_sim, structure, readability):
+    """
+    İçeriğin ne kadar emek harcandığını gösteren bileşik skor.
+    Kelime çeşitliliği + Cümle benzersizliği + Yapı + Okunabilirlik
+    """
+    lexical_score = lexical.get("diversity_score", 50)
+    uniqueness_score = sentence_sim.get("uniqueness_score", 50)
+    structure_score = structure.get("structure_score", 50)
+    readability_score = readability.get("readability_score", 50)
+
+    # Ağırlıklar: Çeşitlilik %30, Benzersizlik %30, Yapı %20, Okunabilirlik %20
+    effort = (
+        lexical_score * 0.30
+        + uniqueness_score * 0.30
+        + structure_score * 0.20
+        + readability_score * 0.20
+    )
+
+    return round(effort, 1)
+
+
+# ============================================================
 # STREAMLIT UI
 # ============================================================
 
-st.markdown('<div class="main-header">AI Site Dedektifi</div>', unsafe_allow_html=True)
+st.markdown(
+    '<div class="main-header">İçerik Analiz Uzmanı</div>', unsafe_allow_html=True
+)
 st.markdown(
     '<div class="sub-header">'
-    "Bir web sitesi URL'si girin. Uygulama metni otomatik olarak çekip "
-    "<strong>yapay zeka tarafından üretilmiş olma ihtimalini</strong> analiz etsin."
+    "Bir web sitesi URL'si girin. İçeriğin kelime çeşitliliği, cümle benzerliği, "
+    "yapısal derinliği ve yazım kalitesi detaylı olarak analiz edilsin."
     "</div>",
     unsafe_allow_html=True,
 )
@@ -833,209 +1139,374 @@ if analyze_button:
             text, error = scrape_url(url)
 
         if error:
-            st.error(f"{error}")
+            st.error(error)
         else:
             st.success(f"Sayfadan {len(text)} karakter metin çıkarıldı.")
 
-            with st.spinner("AI analiz algoritmaları çalıştırılıyor..."):
-                markdown_detections, markdown_total = detect_markdown_izleri(text)
-                found_cliches = analyze_cliches(text)
-                burstiness = analyze_burstiness(text)
-                word_count_total = len(text.split())
-                spelling_errors = check_spelling_native(text)
-                ai_score = calculate_ai_score(
-                    markdown_total,
-                    sum(found_cliches.values()),
-                    burstiness["std_dev"],
-                    word_count_total,
-                    len(spelling_errors),
-                )
-                top_words, total_words, filtered_words_count = analyze_word_frequency(
-                    text
+            with st.spinner("Detaylı analizler çalıştırılıyor..."):
+                lexical = analyze_lexical_diversity(text)
+                sentence_struct = analyze_sentence_structure(text)
+                sentence_sim = analyze_sentence_similarity(text)
+                structure = analyze_content_structure(text)
+                readability = analyze_readability(text)
+                spelling_errors = check_spelling(text)
+                word_dist = analyze_word_distribution(text)
+                effort_score = calculate_effort_score(
+                    lexical, sentence_sim, structure, readability
                 )
 
-                # Net karar
-                verdict_type, verdict_text = get_verdict(ai_score["total"])
+            # ============================================================
+            # GENEL EMEK SKORU
+            # ============================================================
+            st.subheader("Genel İçerik Kalite ve Emek Skoru")
 
-            # ============================================================
-            # NET KARAR KUTUSU
-            # ============================================================
-            if verdict_type == "AI":
-                verdict_class = "verdict-ai"
-                verdict_icon = "🤖"
-            elif verdict_type == "BELİRSİZ":
-                verdict_class = "verdict-maybe"
-                verdict_icon = "⚠️"
+            if effort_score >= 75:
+                effort_class = "score-high"
+                effort_emoji = "💎"
+                effort_label = "Yüksek Kalite"
+            elif effort_score >= 50:
+                effort_class = "score-mid"
+                effort_emoji = "📝"
+                effort_label = "Orta Kalite"
             else:
-                verdict_class = "verdict-human"
-                verdict_icon = "👤"
+                effort_class = "score-low"
+                effort_emoji = "⚠️"
+                effort_label = "Düşük Kalite"
 
-            st.markdown(
-                f'<div class="verdict-box {verdict_class}">'
-                f"{verdict_icon} KARAR: {verdict_type}<br>"
-                f'<span style="font-weight:400;font-size:0.95rem;">{verdict_text}</span>'
-                f"</div>",
-                unsafe_allow_html=True,
-            )
+            cols = st.columns(4)
+            with cols[0]:
+                st.markdown(
+                    f'<div class="score-card {effort_class}">'
+                    f'<div class="metric-label">Emek Skoru</div>'
+                    f'<div class="metric-value">{effort_score}</div>'
+                    f'<div class="metric-desc">{effort_emoji} {effort_label}</div>'
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
+            with cols[1]:
+                st.markdown(
+                    f'<div class="score-card {"score-high" if lexical["diversity_score"] >= 60 else "score-mid" if lexical["diversity_score"] >= 40 else "score-low"}">'
+                    f'<div class="metric-label">Kelime Çeşitliliği</div>'
+                    f'<div class="metric-value">{lexical["diversity_score"]}</div>'
+                    f'<div class="metric-desc">{lexical["unique_types"]} benzersiz kelime</div>'
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
+            with cols[2]:
+                st.markdown(
+                    f'<div class="score-card {"score-high" if sentence_sim["uniqueness_score"] >= 70 else "score-mid" if sentence_sim["uniqueness_score"] >= 50 else "score-low"}">'
+                    f'<div class="metric-label">Cümle Benzersizliği</div>'
+                    f'<div class="metric-value">{sentence_sim["uniqueness_score"]}</div>'
+                    f'<div class="metric-desc">{sentence_sim["total_similar_pairs"]} benzer çift</div>'
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
+            with cols[3]:
+                st.markdown(
+                    f'<div class="score-card {"score-high" if structure["structure_score"] >= 60 else "score-mid" if structure["structure_score"] >= 40 else "score-low"}">'
+                    f'<div class="metric-label">Yapısal Derinlik</div>'
+                    f'<div class="metric-value">{structure["structure_score"]}</div>'
+                    f'<div class="metric-desc">{structure["paragraph_count"]} paragraf</div>'
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
+
+            st.markdown("---")
 
             # ============================================================
-            # SONUÇLARI SEKMELERDE GÖSTER
+            # SEKMELER
             # ============================================================
-            tab1, tab2, tab3 = st.tabs(
-                ["Genel AI Skoru ve Tespitler", "Kelime Analizi", "Yazım Denetimi"]
+            tab1, tab2, tab3, tab4 = st.tabs(
+                [
+                    "Kelime Tekrar Analizi",
+                    "Cümle Benzerliği",
+                    "İçerik Yapısı",
+                    "Yazım Denetimi",
+                ]
             )
 
             # --------------------------------------------------------
-            # SEKME 1: Genel AI Skoru ve Tespitler
+            # SEKME 1: KELİME TEKRAR ANALİZİ
             # --------------------------------------------------------
             with tab1:
-                st.subheader("Yapay Zeka Olma İhtimali")
+                st.subheader("Kelime Çeşitliliği ve Tekrarlar")
 
-                if ai_score["total"] >= 70:
-                    score_label = "Yüksek İhtimal"
-                elif ai_score["total"] >= 40:
-                    score_label = "Orta İhtimal"
-                else:
-                    score_label = "Düşük İhtimal"
-
-                col_a, col_b = st.columns([1, 2])
-                with col_a:
-                    st.metric(
-                        label="AI Skoru",
-                        value=f"{ai_score['total']}%",
-                        delta=score_label,
-                    )
-                with col_b:
-                    st.progress(ai_score["total"] / 100)
-                    st.caption(score_label)
+                # Temel metrikler
+                m1, m2, m3, m4 = st.columns(4)
+                with m1:
+                    st.metric("Toplam Kelime", f"{lexical['total_tokens']:,}")
+                with m2:
+                    st.metric("Benzersiz Kelime", f"{lexical['unique_types']:,}")
+                with m3:
+                    st.metric("Tekrar Oranı", f"{lexical['repetition_rate']}%")
+                with m4:
+                    st.metric("Tür-Token Oranı", f"{lexical['ttr']}")
 
                 st.markdown("---")
 
-                st.subheader("Alt Analiz Sonuçları")
+                # En çok tekrar eden kelimeler
+                st.subheader("En Çok Tekrar Eden Kelimeler")
 
-                c1, c2, c3, c4 = st.columns(4)
-                with c1:
-                    st.metric(
-                        "Markdown İzleri",
-                        f"{ai_score['markdown_score']}%",
-                        help="Ham kopyalama izleri",
-                    )
-                with c2:
-                    st.metric(
-                        "Klişe Kalıplar",
-                        f"{ai_score['cliche_score']}%",
-                        help="AI Türkçe kalıpları",
-                    )
-                with c3:
-                    st.metric(
-                        "Tekdüzelik",
-                        f"{ai_score['burstiness_score']}%",
-                        help="Düşük = robotik",
-                    )
-                with c4:
-                    st.metric(
-                        "Yazım Temizliği",
-                        f"{ai_score['spelling_score']}%",
-                        help="Kusursuz = şüpheli",
-                    )
-
-                st.markdown("---")
-
-                st.subheader("Markdown Tespit Detayları")
-                if markdown_total > 0:
-                    md_df = pd.DataFrame(
-                        [(k, v) for k, v in markdown_detections.items() if v > 0],
-                        columns=["İşaret Tipi", "Bulunan Sayı"],
-                    )
-                    st.dataframe(md_df, use_container_width=True, hide_index=True)
-                    st.info(
-                        f"Toplam **{markdown_total}** adet markdown izi bulundu. "
-                        f"Bu, metnin bir AI aracından kopyalanmış olabileceğini düşündürüyor."
-                    )
-                else:
-                    st.success("Herhangi bir markdown formatlama izi bulunamadı.")
-
-                st.markdown("---")
-
-                st.subheader("AI Klişe Kalıp Analizi")
-                if found_cliches:
-                    cliche_df = pd.DataFrame(
-                        list(found_cliches.items()),
-                        columns=["Klişe Kalıp", "Geçiş Sayısı"],
-                    )
-                    st.dataframe(cliche_df, use_container_width=True, hide_index=True)
-                    st.warning(
-                        f"Toplam **{sum(found_cliches.values())}** adet AI klişe kalıbı bulundu."
-                    )
-                else:
-                    st.success("AI'ya özgü klişe kalıp bulunamadı.")
-
-                st.markdown("---")
-
-                st.subheader("Tekdüzelik (Burstiness) Analizi")
-                st.markdown(f"""
-                - **Toplam Cümle Sayısı:** {burstiness["sentence_count"]}
-                - **Ortalama Cümle Uzunluğu:** {burstiness["mean_length"]} kelime
-                - **Standart Sapma:** {burstiness["std_dev"]}
-                - **Etiket:** {burstiness["label"]}
-                """)
-                st.info(burstiness["description"])
-
-            # --------------------------------------------------------
-            # SEKME 2: Kelime Analizi
-            # --------------------------------------------------------
-            with tab2:
-                st.subheader("Kelime Frekans Analizi")
-
-                col_x, col_y = st.columns(2)
-                with col_x:
-                    st.metric("Toplam Kelime Sayısı", f"{total_words:,}")
-                with col_y:
-                    st.metric(
-                        "Anlamlı Kelime (Stopword Hariç)", f"{filtered_words_count:,}"
-                    )
-
-                if top_words:
-                    freq_df = pd.DataFrame(top_words, columns=["Kelime", "Frekans"])
+                if lexical["top_repeated"]:
+                    # Grafik için DataFrame
+                    top_15 = lexical["top_repeated"][:15]
+                    freq_df = pd.DataFrame(top_15, columns=["Kelime", "Tekrar Sayısı"])
                     freq_df = freq_df.set_index("Kelime")
 
-                    st.markdown("### En Çok Tekrar Eden 10 Kelime")
-                    st.bar_chart(freq_df, horizontal=True, height=400)
+                    st.bar_chart(freq_df, horizontal=True, height=450)
 
-                    st.dataframe(
-                        freq_df.reset_index().rename(
-                            columns={"Kelime": "Kelime", "Frekans": "Geçiş Sayısı"}
-                        ),
-                        use_container_width=True,
-                        hide_index=True,
+                    st.markdown("---")
+
+                    # Detaylı tablo
+                    st.subheader("Tüm Tekrarlı Kelimeler")
+
+                    all_repeated = [
+                        (w, c) for w, c in lexical["repeated_words"].items() if c > 1
+                    ]
+                    all_repeated.sort(key=lambda x: x[1], reverse=True)
+
+                    if all_repeated:
+                        rep_df = pd.DataFrame(
+                            all_repeated, columns=["Kelime", "Tekrar Sayısı"]
+                        )
+                        st.dataframe(
+                            rep_df,
+                            use_container_width=True,
+                            hide_index=True,
+                            height=400,
+                        )
+
+                st.markdown("---")
+
+                # Zipf analizi
+                st.subheader("Kelime Dağılımı (Zipf Analizi)")
+
+                z1, z2, z3 = st.columns(3)
+                with z1:
+                    st.metric("En Sık 5 Kelimenin Payı", f"{word_dist['top_5_share']}%")
+                with z2:
+                    st.metric(
+                        "En Sık 10 Kelimenin Payı", f"{word_dist['top_10_share']}%"
                     )
-                else:
-                    st.warning("Analiz edilecek yeterli kelime bulunamadı.")
+                with z3:
+                    st.metric(
+                        "En Sık 20 Kelimenin Payı", f"{word_dist['top_20_share']}%"
+                    )
+
+                st.markdown("---")
+
+                # Tekrar sıklığı dağılımı
+                st.subheader("Tekrar Sıklığı Dağılımı")
+
+                d1, d2, d3, d4 = st.columns(4)
+                with d1:
+                    st.metric("Sadece 1 Keç", f"{lexical['hapax_count']:,}")
+                with d2:
+                    st.metric("2 Keç Tekrar", f"{word_dist['repeated_2x']:,}")
+                with d3:
+                    st.metric("3 Keç Tekrar", f"{word_dist['repeated_3x']:,}")
+                with d4:
+                    st.metric("5+ Keç Tekrar", f"{word_dist['repeated_5x_plus']:,}")
+
+                st.info(
+                    f"Ortalama bir kelime **{lexical['avg_repetition']}** kez tekrar ediyor. "
+                    f"Toplam {lexical['hapax_count']} kelime sadece 1 kez geçiyor "
+                    f"(Hapax Legomena). Bu, metnin kelime zenginliğinin bir göstergesidir."
+                )
 
             # --------------------------------------------------------
-            # SEKME 3: Yazım Denetimi
+            # SEKME 2: CÜMLE BENZERLİĞİ
+            # --------------------------------------------------------
+            with tab2:
+                st.subheader("Cümle Benzerliği ve Tekrar Eden Fikirler")
+
+                # Temel metrikler
+                s1, s2, s3, s4 = st.columns(4)
+                with s1:
+                    st.metric("Toplam Cümle", f"{sentence_struct['sentence_count']}")
+                with s2:
+                    st.metric(
+                        "Ort. Cümle Uzunluğu",
+                        f"{sentence_struct['mean_length']} kelime",
+                    )
+                with s3:
+                    st.metric(
+                        "Benzer Cümle Çifti", f"{sentence_sim['total_similar_pairs']}"
+                    )
+                with s4:
+                    st.metric(
+                        "Benzersizlik Skoru", f"{sentence_sim['uniqueness_score']}%"
+                    )
+
+                st.markdown("---")
+
+                # Cümle uzunluk dağılımı
+                st.subheader("Cümle Uzunluk Dağılımı")
+
+                dist_data = sentence_struct["length_distribution"]
+                if dist_data:
+                    dist_df = pd.DataFrame(
+                        list(dist_data.items()), columns=["Aralık", "Cümle Sayısı"]
+                    ).set_index("Aralık")
+                    st.bar_chart(dist_df, horizontal=True, height=250)
+
+                st.markdown("---")
+
+                # Benzer cümle çiftleri
+                st.subheader("Birbirine Benzer Cümle Çiftleri")
+
+                if sentence_sim["similar_pairs"]:
+                    for idx, pair in enumerate(sentence_sim["similar_pairs"][:15]):
+                        similarity_pct = int(pair["jaccard"] * 100)
+                        overlap_pct = int(pair["overlap_ratio"] * 100)
+
+                        if similarity_pct >= 25:
+                            badge = "🔴 Yüksek Benzerlik"
+                        elif similarity_pct >= 15:
+                            badge = "🟡 Orta Benzerlik"
+                        else:
+                            badge = "🟢 Düşük Benzerlik"
+
+                        with st.container(border=True):
+                            st.markdown(
+                                f"**{badge}** — Benzerlik: %{similarity_pct} | Ortak Kelime: {pair['common_count']}"
+                            )
+                            col_a, col_b = st.columns(2)
+                            with col_a:
+                                st.caption(f"Cümle A: {pair['sentence_a']}")
+                            with col_b:
+                                st.caption(f"Cümle B: {pair['sentence_b']}")
+                            st.caption(f"Ortak kelimeler: {pair['common_words']}")
+
+                    if sentence_sim["total_similar_pairs"] > 15:
+                        st.info(
+                            f"Toplam {sentence_sim['total_similar_pairs']} benzer çift bulundu. "
+                            f"En belirgin {min(15, sentence_sim['total_similar_pairs'])} çift yukarıda gösteriliyor."
+                        )
+                else:
+                    st.success(
+                        "Hiçbir cümle çifti arasında anlamlı benzerlik bulunamadı. İçerik oldukça benzersiz."
+                    )
+
+                st.markdown("---")
+
+                # Cümle çeşitlilik skoru
+                st.subheader("Cümle Çeşitliliği")
+                st.info(
+                    f"Cümle uzunluklarının standart sapması: **{sentence_struct['std_length']}**. "
+                    f"Bu değer ne kadar yüksekse, cümleler o kadar çeşitli uzunluklarda demektir. "
+                    f"Çeşitlilik skoru: **{sentence_struct['variety_score']}/100**"
+                )
+
+            # --------------------------------------------------------
+            # SEKME 3: İÇERİK YAPISI
             # --------------------------------------------------------
             with tab3:
+                st.subheader("İçerik Yapısı ve Derinlik")
+
+                # Temel metrikler
+                p1, p2, p3, p4 = st.columns(4)
+                with p1:
+                    st.metric("Paragraf Sayısı", structure["paragraph_count"])
+                with p2:
+                    st.metric(
+                        "Ort. Paragraf Uzunluğu",
+                        f"{structure['avg_paragraph_length']} kelime",
+                    )
+                with p3:
+                    st.metric("Olası Başlık Sayısı", structure["heading_count"])
+                with p4:
+                    st.metric("Toplam Karakter", f"{structure['total_chars']:,}")
+
+                st.markdown("---")
+
+                # Paragraf uzunluk grafiği
+                st.subheader("Paragraf Uzunluk Dağılımı")
+
+                if structure["paragraph_lengths"]:
+                    para_df = pd.DataFrame(
+                        enumerate(structure["paragraph_lengths"], 1),
+                        columns=["Paragraf", "Kelime Sayısı"],
+                    ).set_index("Paragraf")
+                    st.bar_chart(para_df, height=300)
+
+                st.markdown("---")
+
+                # Başlıklar
+                if structure["potential_headings"]:
+                    st.subheader("Tespit Edilen Olası Başlıklar")
+                    for h in structure["potential_headings"][:10]:
+                        st.markdown(f"- {h}")
+
+                st.markdown("---")
+
+                # Okunabilirlik
+                st.subheader("Okunabilirlik Analizi")
+
+                if "error" not in readability:
+                    o1, o2, o3 = st.columns(3)
+                    with o1:
+                        st.metric(
+                            "Ort. Cümle Uzunluğu",
+                            f"{readability['avg_sentence_length']} kelime",
+                        )
+                    with o2:
+                        st.metric(
+                            "Ort. Kelime Uzunluğu",
+                            f"{readability['avg_word_length']} karakter",
+                        )
+                    with o3:
+                        st.metric(
+                            "Uzun Kelime Oranı",
+                            f"{readability['long_word_ratio'] * 100:.1f}%",
+                        )
+
+                    st.markdown("---")
+
+                    # Okunabilirlik seviyesi
+                    if readability["readability_score"] >= 80:
+                        level_color = "🟢"
+                    elif readability["readability_score"] >= 60:
+                        level_color = "🟡"
+                    elif readability["readability_score"] >= 40:
+                        level_color = "🟠"
+                    else:
+                        level_color = "🔴"
+
+                    st.markdown(f"""
+                    **{level_color} Okunabilirlik Seviyesi: {readability["level"]}**
+
+                    {readability["level_desc"]}
+
+                    - Okunabilirlik Skoru: **{readability["readability_score"]}/100**
+                    - Uzun kelime (7+ karakter) sayısı: **{readability["long_word_count"]}**
+                    """)
+
+            # --------------------------------------------------------
+            # SEKME 4: YAZIM DENETİMİ
+            # --------------------------------------------------------
+            with tab4:
                 st.subheader("Yazım ve Dilbilgisi Denetimi")
 
                 if spelling_errors:
                     st.warning(
                         f"Toplam **{len(spelling_errors)}** adet hata/uyarı bulundu."
                     )
+
                     error_df = pd.DataFrame(spelling_errors)
                     st.dataframe(error_df, use_container_width=True, hide_index=True)
                 else:
                     st.success("Yazım hatası bulunamadı.")
 
-                    if word_count_total >= 500:
-                        st.warning(
-                            f"**Kusursuzluk Paradoksu:** Metin dilbilgisi açısından kusursuz. "
-                            f"Bu kadar uzun bir metinde ({word_count_total} kelime) insani hataların "
-                            f"hiç bulunmaması, metnin AI ile üretilmiş olma şüphesini artırabilir."
+                    if structure["total_words"] >= 500:
+                        st.info(
+                            f"Bu kadar uzun bir metinde ({structure['total_words']} kelime) "
+                            f"hiç yazım hatası bulunmaması dikkat çekici."
                         )
 
                 st.markdown("---")
 
+                # Metin önizleme
                 st.subheader("Çekilen Metin Önizlemesi")
                 preview_text = text[:500] + ("..." if len(text) > 500 else "")
                 with st.expander("Metin Önizlemesini Göster", expanded=False):
@@ -1046,7 +1517,6 @@ if analyze_button:
 # ============================================================
 st.markdown("---")
 st.caption(
-    "AI Site Dedektifi | Web kazıma: trafilatura | "
-    "Yazım denetimi: yerleşik kurallar | "
-    "Analiz: numpy, pandas | Arayüz: Streamlit"
+    "İçerik Analiz Uzmanı | Web kazıma: trafilatura | "
+    "Analiz motoru: numpy, pandas | Arayüz: Streamlit"
 )
