@@ -364,7 +364,56 @@ let wordChartInstance = null;
 
 // ===================== YARDIMCI FONKSİYONLAR =====================
 function getSentences(text) {
-  return text.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 3);
+  // Önce metni satırlara böl (başlık, liste gibi yapıları ayır)
+  const lines = text.split(/\n+/);
+  const rawSentences = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.length < 5) continue;
+
+    // Başlık satırları (# veya kısa satır) ayrı tutulur, bölünmez
+    if (trimmed.startsWith('#') || (trimmed.length < 60 && !trimmed.endsWith('.') && !trimmed.endsWith('!') && !trimmed.endsWith('?'))) {
+      rawSentences.push(trimmed);
+      continue;
+    }
+
+    // Satırı cümlelere böl — nokta, ünlem, soru işareti
+    // Ama kısaltmalarda ve sayılarda bölme
+    let protected_text = trimmed;
+
+    // 1. Sayıları koru (1.5, 3.14, 2023. vb.)
+    protected_text = protected_text.replace(/(\d)\.(\d)/g, '$1<DOT>$2');
+
+    // 2. Yaygın kısaltmaları koru
+    const abbrevs = ['dr','prof','doç','av','müh','mim','sth','alb','bşk','gen','vs','vb','yk','sgk','tc','tl','usd','eur','gb','mb','tb','dk','sn','gr','kg','cm','mm','km','m²','m³','no','nr','say','sf','sf.','sf','sf'];
+    abbrevs.forEach(ab => {
+      const regex = new RegExp('\\b(' + ab + ')\\.', 'gi');
+      protected_text = protected_text.replace(regex, '$1<ABBR>');
+    });
+
+    // 3. Tek harf + nokta (A., B., C. gibi) koru
+    protected_text = protected_text.replace(/\b([A-Za-zÇçĞğİıÖöŞşÜü])\./g, '$1<ABBR>');
+
+    // 4. Web sitesi URL'lerindeki noktaları koru
+    protected_text = protected_text.replace(/https?:\/\/[^\s]+/g, m => m.replace(/\./g, '<DOT>'));
+
+    // 5. Şimdi cümlelere böl
+    const parts = protected_text.split(/(?<=[.!?])\s+/);
+
+    for (const part of parts) {
+      // Korunan karakterleri geri koy
+      let sentence = part.replace(/<DOT>/g, '.').replace(/<ABBR>/g, '.');
+      sentence = sentence.trim();
+      // En az 10 karakter ve en az 3 kelime içeren cümleleri al
+      const words = sentence.split(/\s+/);
+      if (sentence.length >= 10 && words.length >= 3) {
+        rawSentences.push(sentence);
+      }
+    }
+  }
+
+  return rawSentences;
 }
 
 function getWords(text) {
