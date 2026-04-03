@@ -329,6 +329,124 @@ function scoreClass(score) {
   return 'score-high';
 }
 
+// ===================== EŞ ANLAMLI HARİTASI (Semantik Benzerlik) =====================
+const SYNONYM_GROUPS = [
+  ["gelişmek","ilerlemek","büyümek","artmak","yükselmek","genişlemek","gelişim","ilerleme","büyüme","artış","yükseliş","genişleme","geliyor","ilerliyor","artıyor","yükseliyor","gelişti","ilerledi","arttı","yükseldi","gelişme","ilerleme"],
+  ["önemli","kritik","değerli","önem","kritik","değer","önemlidir","kritiktir","değerlidir","önemli bir","önemli rol","önemli derece"],
+  ["büyük","geniş","kapsamlı","kocaman","devasa","büyüktür","geniştir","kapsamlıdır","büyük ölçüde"],
+  ["hız","çabukluk","sürat","hızlı","çabuk","süratli","hızla","çabucak","süratle","hızlıca","hızla gelişen"],
+  ["etki","tesir","etkilemek","etkisi","tesiri","etkiliyor","etkiledi","etkisinde","etkileri","etkisini","etkilemektedir"],
+  ["teknoloji","teknik","dijital","teknolojik","teknolojiler","teknikler","dijitalleşme","teknolojik gelişmeler"],
+  ["hayat","yaşam","günlük","yaşam","hayatı","yaşamı","hayatın","yaşamın","hayatımız","yaşamımız","hayatımızın","yaşamımıza"],
+  ["gelecek","ileride","ilerleyen","gelecekte","ileriki","geleceğin","ilerideki","gelecekteki"],
+  ["alan","sektör","bölüm","dal","saha","sektöründe","alanında","bölümünde","alanlarda"],
+  ["gerekli","şart","lazım","önemli","zorunlu","gerekmektedir","gerekir","şarttır","gereklidir"],
+  ["katkı","fayda","yarar","katkıda","fayda sağlar","yarar sağlar","katkı sağlar","faydalı","yararlı","katkıda bulunmak"],
+  ["sorun","problem","zorluk","sıkıntı","mesele","sorunu","problemi","zorluğu","sorunlar","problemler","sorunları"],
+  ["çözüm","çare","yol","çözümü","çözümüne","çözüm üretmek","çözüm bulmak","çözümler"],
+  ["artırmak","güçlendirmek","geliştirmek","artırılmalı","güçlendirilmeli","geliştirilmeli","artırılması","güçlendirilmesi","geliştirilmesi","artırmak","artırılmalıdır"],
+  ["kullanmak","yararlanmak","faydalanmak","kullanımı","kullanım","kullanılarak","yararlanılarak","kullanılmaktadır","kullanılmaya"],
+  ["sağlamak","temin etmek","sunmak","sağlar","sağlayan","sağladığı","sağlamaktadır","sağlamıştır","sunmaktadır","sunar","sağlaması"],
+  ["göstermek","ortaya koymak","belirtmek","gösteriyor","gösterdi","ortaya koyuyor","belirtiyor","belirtti","göstermektedir","belirtmektedir","göstermektedir"],
+  ["yapmak","gerçekleştirmek","uygulamak","yapılıyor","gerçekleştiriliyor","yapıldı","gerçekleştirildi","yapılması","gerçekleştirilmesi","yapılmaktadır"],
+  ["düşünce","fikir","görüş","düşüncesi","fikri","görüşü","düşünceler","fikirler","görüşler"],
+  ["insan","birey","kişi","insanlar","bireyler","kişiler","insanın","bireyin","kişinin","insanlara"],
+  ["toplum","halk","kamuoyu","toplumsal","toplumun","halkın","toplumda","topluma","toplumlar"],
+  ["dünya","küresel","evrensel","dünyada","dünyanın","küresel düzeyde","dünya genelinde"],
+  ["yeni","modern","güncel","yenilikçi","modernleşme","güncel olarak","yeni nesil"],
+  ["doğru","uygun","elverişli","doğru şekilde","uygun biçimde","doğru bir"],
+  ["devam etmek","sürdürmek","devam ediyor","sürdürüyor","devam edecektir","sürdürecektir","devam etmekte","sürdürmektedir","devam etmektedir"],
+  ["risk","tehlike","tehdit","riski","tehlikesi","tehdidi","riskler","tehlikeler","riskleri"],
+  ["avantaj","fırsat","imkan","avantajları","fırsatları","imkanları","avantaj sağlar","fırsat sunar","avantajları"],
+  ["ihtiyaç","gereksinim","ihtiyaçları","gereksinimleri","ihtiyaç duyulan","gereksinim duyulan","ihtiyaç"],
+  ["araştırma","inceleme","çalışma","araştırmalar","incelemeler","çalışmalar","araştırması","incelemesi","çalışmaları"],
+  ["sonuç","netice","bulgu","sonuçları","neticeleri","bulguları","sonucunda","neticesinde","sonuç olarak"],
+  ["make","produce","create","generate","build","develop","making","producing","creating","generating","made","produced","created","generated"],
+  ["important","significant","crucial","critical","essential","vital","key","major"],
+  ["increase","grow","rise","expand","enhance","increasing","growing","rising","increased","increases"],
+  ["impact","effect","influence","affect","impacts","effects","influences"],
+  ["use","utilize","employ","apply","using","utilizing","used","utilized"],
+  ["show","demonstrate","indicate","reveal","shows","demonstrates","indicates","reveals","showed","demonstrated"],
+];
+
+const WORD_TO_GROUP = {};
+SYNONYM_GROUPS.forEach((group, idx) => {
+  group.forEach(word => { WORD_TO_GROUP[word.toLowerCase()] = idx; });
+});
+
+function stemTr(word) {
+  const suffixes = [
+    "maktadır","mektedir","maktadir","mektedir",
+    "larımız","lerimiz","larınız","leriniz",
+    "larından","lerinden","larından","lerinden",
+    "ları","leri","ları","leri",
+    "ımız","imiz","umuz","ümüz",
+    "ınız","iniz","unuz","ünüz",
+    "ları","leri",
+    "daki","deki",
+    "dan","den","tan","ten",
+    "da","de","ta","te",
+    "ı","i","u","ü",
+    "yı","yi","yu","yü",
+    "ın","in","un","ün",
+    "sin","sın","sun","sün",
+    "siniz","sınız","sunuz","sünüz",
+    "iz","ız","uz","üz",
+    "dik","dık","duk","dük","tik","tak","tuk","tük",
+    "ecek","acak","ecek","acak",
+    "iyor","ıyor","üyor","uyor",
+    "di","dı","du","dü","ti","tı","tu","tü",
+    "miş","mış","muş","müş",
+    "mek","mak",
+    "me","ma",
+    "le","la",
+    "ce","ca","çe","ça",
+    "ken","kin","kun","kün",
+    "li","lı","lu","lü",
+    "siz","sız","suz","süz",
+    "ci","cı","cu","cü","çi","çı","çu","çü",
+    "sel","sal",
+    "dir","dır","dur","dür","tir","tır","tur","tür",
+    "di","dı","du","dü",
+    "se","sa","yse","ysa",
+  ];
+  let stemmed = word;
+  for (const suf of suffixes) {
+    if (stemmed.length > suf.length + 2 && stemmed.endsWith(suf)) {
+      stemmed = stemmed.slice(0, -suf.length);
+      break;
+    }
+  }
+  return stemmed;
+}
+
+function getSemanticVector(words) {
+  const vec = {};
+  words.forEach(w => {
+    const stemmed = stemTr(w);
+    vec[stemmed] = (vec[stemmed] || 0) + 1;
+    const groupId = WORD_TO_GROUP[w];
+    if (groupId !== undefined) {
+      vec['syn_' + groupId] = (vec['syn_' + groupId] || 0) + 1;
+    }
+  });
+  return vec;
+}
+
+function cosineSimilarity(vecA, vecB) {
+  const allKeys = new Set([...Object.keys(vecA), ...Object.keys(vecB)]);
+  let dot = 0, magA = 0, magB = 0;
+  allKeys.forEach(k => {
+    const a = vecA[k] || 0;
+    const b = vecB[k] || 0;
+    dot += a * b;
+    magA += a * a;
+    magB += b * b;
+  });
+  if (magA === 0 || magB === 0) return 0;
+  return dot / (Math.sqrt(magA) * Math.sqrt(magB));
+}
+
 // ===================== ANALİZ =====================
 function analyze() {
   const text = document.getElementById('inputText').value.trim();
@@ -389,18 +507,48 @@ function analyze() {
   const avg = mean(sentLengths);
   const burstiness = avg > 0 ? sd / avg : 0;
 
-  // 9. Jaccard cümle benzerliği
+  // 9. Jaccard cümle benzerliği (kelime örtüşmesi)
   const sentWordSets = sentences.map(s => new Set(getWordsFiltered(s, lang)));
-  const similarPairs = [];
+  const similarPairsJaccard = [];
   for (let i = 0; i < sentWordSets.length; i++) {
     for (let j = i + 1; j < sentWordSets.length; j++) {
       const sim = jaccard(sentWordSets[i], sentWordSets[j]);
       if (sim >= 0.55) {
-        similarPairs.push({ a: sentences[i], b: sentences[j], sim: sim });
+        similarPairsJaccard.push({ a: sentences[i], b: sentences[j], sim: sim, type: 'kelime' });
       }
     }
   }
-  similarPairs.sort((a,b) => b.sim - a.sim);
+  similarPairsJaccard.sort((a,b) => b.sim - a.sim);
+
+  // 9b. Semantik benzerlik (aynı şeyi farklı kelimelerle anlatan cümleler)
+  const semanticPairs = [];
+  for (let i = 0; i < sentences.length; i++) {
+    for (let j = i + 1; j < sentences.length; j++) {
+      const wordsA = getWordsFiltered(sentences[i], lang);
+      const wordsB = getWordsFiltered(sentences[j], lang);
+      if (wordsA.length < 2 || wordsB.length < 2) continue;
+
+      const vecA = getSemanticVector(wordsA);
+      const vecB = getSemanticVector(wordsB);
+      const cosSim = cosineSimilarity(vecA, vecB);
+
+      const jacSim = jaccard(sentWordSets[i], sentWordSets[j]);
+
+      if (cosSim >= 0.30 && jacSim < 0.55) {
+        semanticPairs.push({
+          a: sentences[i],
+          b: sentences[j],
+          cosSim: cosSim,
+          jacSim: jacSim
+        });
+      }
+    }
+  }
+  semanticPairs.sort((a,b) => b.cosSim - a.cosSim);
+
+  // Tüm benzer çiftleri birleştir (skorlama için)
+  const allSimilarPairs = [...similarPairsJaccard, ...semanticPairs];
+  allSimilarPairs.sort((a,b) => (b.sim || b.cosSim) - (a.sim || a.cosSim));
 
   // 10. Trigram analizi
   const trigramCounts = {};
@@ -426,7 +574,7 @@ function analyze() {
   aiScore = Math.min(aiScore, 100);
 
   let repeatScore = 0;
-  repeatScore += Math.min(similarPairs.length * 15, 40);
+  repeatScore += Math.min(allSimilarPairs.length * 15, 40);
   const trigExtra = Math.max(0, repeatedTrigrams.length - 3);
   repeatScore += Math.min(trigExtra * 8, 30);
   repeatScore = Math.min(repeatScore, 100);
@@ -453,8 +601,11 @@ function analyze() {
   if (headingLines > 0) {
     findings.push({ text: `${headingLines} adet markdown başlığı`, badge: 'YZ İşareti' });
   }
-  if (similarPairs.length > 0) {
-    findings.push({ text: `${similarPairs.length} adet benzer cümle çifti (>%55)`, badge: 'Tekrar' });
+  if (similarPairsJaccard.length > 0) {
+    findings.push({ text: `${similarPairsJaccard.length} adet benzer cümle çifti (aynı kelimeler, >%55)`, badge: 'Tekrar' });
+  }
+  if (semanticPairs.length > 0) {
+    findings.push({ text: `${semanticPairs.length} adet anlamsal olarak benzer cümle (farklı kelimeler, aynı anlam)`, badge: 'Tekrar' });
   }
   if (repeatedTrigrams.length > 0) {
     findings.push({ text: `${repeatedTrigrams.length} adet tekrar eden trigram`, badge: 'Tekrar' });
@@ -480,15 +631,15 @@ function analyze() {
     summary += `Yapay Zeka skoru düşük (${aiScore}/100). Metin büyük olasılıkla insan tarafından yazılmıştır. `;
   }
   if (repeatScore > 40) {
-    summary += `Tekrar skoru yüksektir (${repeatScore}/100). ${similarPairs.length} benzer cümle çifti ve ${repeatedTrigrams.length} tekrar eden trigram tespit edilmiştir. `;
+    summary += `Tekrar skoru yüksektir (${repeatScore}/100). ${similarPairsJaccard.length} kelime bazlı tekrar, ${semanticPairs.length} anlamsal tekrar ve ${repeatedTrigrams.length} tekrar eden trigram tespit edilmiştir. `;
   }
   summary += `Orijinallik skoru ${originalityScore.toFixed(0)}/100 olarak hesaplanmıştır.`;
 
   // ===================== ARAYÜZE YAZDIRMA =====================
   renderMetrics(allWords.length, sentences.length, ttr, burstiness);
-  renderScores(aiScore, repeatScore, originalityScore, foundCliches, typoCount, listLines, passiveCount, similarPairs, repeatedTrigrams, burstiness);
+  renderScores(aiScore, repeatScore, originalityScore, foundCliches, typoCount, listLines, passiveCount, allSimilarPairs, repeatedTrigrams, burstiness);
   renderFindings(findings);
-  renderRepeats(similarPairs);
+  renderRepeats(similarPairsJaccard, semanticPairs);
   renderExpressions(foundCliches, repeatedTrigrams);
   renderCharts(sentLengths, filteredWords);
   renderSummary(summary);
@@ -597,17 +748,41 @@ function renderFindings(findings) {
   }).join('');
 }
 
-function renderRepeats(pairs) {
+function renderRepeats(jaccardPairs, semanticPairs) {
   const card = document.getElementById('repeatCard');
-  if (pairs.length === 0) { card.style.display = 'none'; return; }
+  const totalPairs = jaccardPairs.length + semanticPairs.length;
+  if (totalPairs === 0) { card.style.display = 'none'; return; }
   card.style.display = 'block';
-  document.getElementById('repeats').innerHTML = pairs.map((p,i) => `
-    <div class="repeat-pair">
-      <div class="repeat-pct" style="color:${scoreColor(p.sim*100)}">%${(p.sim*100).toFixed(0)} Benzerlik — Çift #${i+1}</div>
-      <div class="repeat-sent">"${p.a}"</div>
-      <div class="repeat-sent">"${p.b}"</div>
-    </div>
-  `).join('');
+
+  let html = '';
+
+  // Jaccard tekrarları (aynı kelimeler)
+  if (jaccardPairs.length > 0) {
+    html += '<div style="margin-bottom:1rem"><strong style="font-size:0.85rem;color:var(--red)">🔴 Aynı Kelimelerle Tekrar (' + jaccardPairs.length + ' çift)</strong></div>';
+    jaccardPairs.slice(0, 20).forEach((p, i) => {
+      const pct = Math.round(p.sim * 100);
+      html += `<div class="repeat-pair">
+        <div class="repeat-pct" style="color:${scoreColor(pct)}">%${pct} Kelime Örtüşmesi — Çift #${i+1}</div>
+        <div class="repeat-sent">"${p.a}"</div>
+        <div class="repeat-sent">"${p.b}"</div>
+      </div>`;
+    });
+  }
+
+  // Semantik tekrarlar (farklı kelimeler, aynı anlam)
+  if (semanticPairs.length > 0) {
+    html += '<div style="margin-bottom:1rem;margin-top:1rem"><strong style="font-size:0.85rem;color:var(--yellow)">🟡 Farklı Kelimelerle Aynı Anlam (' + semanticPairs.length + ' çift)</strong></div>';
+    semanticPairs.slice(0, 20).forEach((p, i) => {
+      const pct = Math.round(p.cosSim * 100);
+      html += `<div class="repeat-pair">
+        <div class="repeat-pct" style="color:${scoreColor(pct)}">%${pct} Anlamsal Benzerlik — Çift #${i+1}</div>
+        <div class="repeat-sent">"${p.a}"</div>
+        <div class="repeat-sent">"${p.b}"</div>
+      </div>`;
+    });
+  }
+
+  document.getElementById('repeats').innerHTML = html;
 }
 
 function renderExpressions(cliches, trigrams) {
@@ -702,7 +877,11 @@ Yapay zeka teknolojileri günümüz dünyasında büyük bir hızla gelişmekted
 
 Dikkat edilmesi gereken en önemli husus, yapay zeka teknolojilerinin etik boyutudur. Vurgulamak gerekirse, yapay zeka teknolojileri insan hayatını kolaylaştırmak için geliştirilmiştir. Bu bağlamda, yapay zeka teknolojilerinin doğru kullanılması büyük önem arz etmektedir.
 
-Sonuç olarak, yapay zeka teknolojileri geleceğin en önemli alanlarından biri olmaya devam edecektir. Öte yandan, yapay zeka teknolojilerinin gelişimi hız kesmeden devam edecektir. Bu doğrultuda, yapay zeka alanında yapılan yatırımların artırılması gerekmektedir.`;
+Sonuç olarak, yapay zeka teknolojileri geleceğin en önemli alanlarından biri olmaya devam edecektir. Öte yandan, yapay zeka teknolojilerinin gelişimi hız kesmeden devam edecektir. Bu doğrultuda, yapay zeka alanında yapılan yatırımların artırılması gerekmektedir.
+
+Dijital araçların yaygınlaşmasıyla birlikte makine öğrenimi uygulamaları da geniş bir kullanım alanı bulmaktadır. Bu sayede, otomasyon sistemleri günlük yaşamımızı kolaylaştırmaya devam etmektedir.
+
+Yapay zeka sistemleri insanların yaşam kalitesini yükseltmek amacıyla tasarlanmaktadır. Bu teknolojiler sayesinde bireylerin hayatı daha pratik ve verimli hale gelmektedir.`;
 }
 </script>
 </body>
