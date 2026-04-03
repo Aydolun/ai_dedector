@@ -4,7 +4,6 @@ import re
 import numpy as np
 import pandas as pd
 from collections import Counter
-import language_tool_python
 
 # ============================================================
 # SAYFA YAPILANDIRMASI
@@ -35,13 +34,35 @@ st.markdown(
         color: #6b7280;
         margin-bottom: 2rem;
     }
+    .verdict-box {
+        padding: 1.2rem 1.5rem;
+        border-radius: 12px;
+        margin: 1rem 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    .verdict-ai {
+        background: linear-gradient(135deg, #fef2f2, #fee2e2);
+        border: 2px solid #fca5a5;
+        color: #991b1b;
+    }
+    .verdict-maybe {
+        background: linear-gradient(135deg, #fffbeb, #fef3c7);
+        border: 2px solid #fcd34d;
+        color: #92400e;
+    }
+    .verdict-human {
+        background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+        border: 2px solid #86efac;
+        color: #166534;
+    }
 </style>
 """,
     unsafe_allow_html=True,
 )
 
 # ============================================================
-# TÜRKÇE STOPWORD LİSTESİ (kelime frekans analizi için)
+# TÜRKÇE STOPWORD LİSTESİ
 # ============================================================
 TURKISH_STOPWORDS = {
     "acaba",
@@ -255,7 +276,6 @@ TURKISH_STOPWORDS = {
     "gayet",
     "hakeza",
     "halbuki",
-    "hangi",
     "hangisi",
     "hani",
     "hariç",
@@ -459,7 +479,7 @@ TURKISH_STOPWORDS = {
 }
 
 # ============================================================
-# AI KLİŞE KALIPLARI (Türkçe AI metinlerinde sık kullanılanlar)
+# AI KLİŞE KALIPLARI
 # ============================================================
 AI_CLICHES = [
     "sonuç olarak",
@@ -492,6 +512,70 @@ AI_CLICHES = [
     "şüphesiz ki",
     "kuşkusuz",
     "malumdur ki",
+]
+
+# ============================================================
+# YAYGIN TÜRKÇE YAZIM HATALARI (Java gerektirmeyen kontrol)
+# ============================================================
+SPELLING_RULES = [
+    # (regex_pattern, dogru_yazi, aciklama)
+    (r"\bde\s+ki\b", "de ki", '"de" ve "ki" ayrı yazılmalı'),
+    (r"\bda\s+ki\b", "da ki", '"da" ve "ki" ayrı yazılmalı'),
+    (r"\bki\s+de\b", "ki de", '"ki" ve "de" ayrı yazılmalı'),
+    (r"\bki\s+da\b", "ki da", '"ki" ve "da" ayrı yazılmalı'),
+    (r"\bmi\s+de\b", "mi de", '"mi" ve "de" ayrı yazılmalı'),
+    (r"\bmi\s+ki\b", "mi ki", '"mi" ve "ki" ayrı yazılmalı'),
+    (r"\bherkez\b", "herkes", "Doğru yazımı: herkes"),
+    (r"\bherkesin\b", "herkesin", None),
+    (r"\bherşey\b", "her şey", "Doğru yazımı: her şey (ayrı)"),
+    (r"\bhersey\b", "her şey", "Doğru yazımı: her şey"),
+    (r"\bbugun\b", "bugün", "Doğru yazımı: bugün"),
+    (r"\byarın\b", "yarın", None),
+    (r"\byarin\b", "yarın", "Doğru yazımı: yarın"),
+    (r"\bbugün\b", "bugün", None),
+    (r"\bgüzel\b", "güzel", None),
+    (r"\byanlız\b", "yalnız", "Doğru yazımı: yalnız"),
+    (r"\byalnış\b", "yanlış", "Doğru yazımı: yanlış"),
+    (r"\byalniz\b", "yalnız", "Doğru yazımı: yalnız (İngilizce klavye)"),
+    (r"\bcok\b", "çok", "Doğru yazımı: çok"),
+    (r"\bcoktan\b", "çoktan", None),
+    (r"\bguzel\b", "güzel", "Doğru yazımı: güzel (İngilizce klavye)"),
+    (r"\bsey\b", "şey", "Doğru yazımı: şey (bağımsız kelime olarak)"),
+    (r"\bşey\b", "şey", None),
+    (r"\bniye\b", "niye", None),
+    (r"\bnicün\b", "niçün", None),
+    (r"\byapıcam\b", "yapacağım", "Doğru yazımı: yapacağım"),
+    (r"\bedicem\b", "edeceğim", "Doğru yazımı: edeceğim"),
+    (r"\bapacık\b", "apaçık", "Doğru yazımı: apaçık"),
+    (r"\bapçık\b", "apaçık", "Doğru yazımı: apaçık"),
+    (r"\bherhalde\b", "herhalde", None),
+    (r"\bherhâlde\b", "herhalde", "Doğru yazımı: herhalde"),
+    (r"\bbi\b", "bir", '"bi" yerine "bir" yazılmalı (bağımsız kelime)'),
+    (r"\bnapıcam\b", "ne yapacağım", "Doğru yazımı: ne yapacağım"),
+    (r"\bnabıcam\b", "ne yapacağım", "Doğru yazımı: ne yapacağım"),
+    (r"\bnapıyorsun\b", "ne yapıyorsun", "Doğru yazımı: ne yapıyorsun"),
+    (r"\bgeliom\b", "geliyorum", "Doğru yazımı: geliyorum"),
+    (r"\bgelcem\b", "geleceğim", "Doğru yazımı: geleceğim"),
+    (r"\bgidcem\b", "gideceğim", "Doğru yazımı: gideceğim"),
+    (r"\bbiliom\b", "biliyorum", "Doğru yazımı: biliyorum"),
+    (r"\bistiom\b", "istiyorum", "Doğru yazımı: istiyorum"),
+    (r"\balmıom\b", "almıyorum", "Doğru yazımı: almıyorum"),
+    (r"\balmıyom\b", "almıyorum", "Doğru yazımı: almıyorum"),
+    (r"\bdüşünüom\b", "düşünüyorum", "Doğru yazımı: düşünüyorum"),
+    (r"\böğrencileri\b", "öğrencileri", None),
+    (r"\bögretmen\b", "öğretmen", "Doğru yazımı: öğretmen"),
+    (r"\bokul\b", "okul", None),
+    (r"\bkitap\b", "kitap", None),
+    (r"\bıngilizce\b", "İngilizce", "Doğru yazımı: İngilizce"),
+    (r"\bingilizce\b", "İngilizce", "Doğru yazımı: İngilizce (büyük harf)"),
+    (r"\balmanca\b", "Almanca", "Doğru yazımı: Almanca (büyük harf)"),
+    (r"\bfransızca\b", "Fransızca", "Doğru yazımı: Fransızca (büyük harf)"),
+    (r"\btürkçe\b", "Türkçe", "Doğru yazımı: Türkçe (büyük harf)"),
+    (r"\barapça\b", "Arapça", "Doğru yazımı: Arapça (büyük harf)"),
+    (r"\bistanbul\b", "İstanbul", "Doğru yazımı: İstanbul (büyük harf)"),
+    (r"\bankara\b", "Ankara", "Doğru yazımı: Ankara (büyük harf)"),
+    (r"\bızmır\b", "İzmir", "Doğru yazımı: İzmir"),
+    (r"\bızmir\b", "İzmir", "Doğru yazımı: İzmir"),
 ]
 
 
@@ -547,7 +631,7 @@ def detect_markdown_izleri(text):
 
 
 def analyze_cliches(text):
-    """Metindeki AI klişe kalıplarını sayar ve frekanslarını hesaplar."""
+    """Metindeki AI klişe kalıplarını sayar."""
     text_lower = text.lower()
     found_cliches = {}
 
@@ -560,10 +644,7 @@ def analyze_cliches(text):
 
 
 def analyze_burstiness(text):
-    """
-    Cümle uzunluklarının standart sapmasını hesaplar.
-    Düşük sapma = Robotik/Tekdüze, Yüksek sapma = İnsansı/Çeşitli
-    """
+    """Cümle uzunluklarının standart sapmasını hesaplar."""
     sentences = re.split(r"[.!?]+", text)
     sentences = [s.strip() for s in sentences if s.strip()]
 
@@ -603,11 +684,14 @@ def analyze_burstiness(text):
     }
 
 
-def calculate_ai_score(markdown_count, cliche_count, burstiness_std, word_count):
+def calculate_ai_score(
+    markdown_count, cliche_count, burstiness_std, word_count, spelling_error_count
+):
     """
-    Markdown izleri, klişeler ve tekdüzelik analizine göre
+    Markdown izleri, klişeler, tekdüzelik ve yazım hatalarına göre
     0-100 arası AI olma ihtimali skoru hesaplar.
     """
+    # Markdown skoru (0-100)
     if markdown_count == 0:
         md_score = 0
     elif markdown_count <= 3:
@@ -617,6 +701,7 @@ def calculate_ai_score(markdown_count, cliche_count, burstiness_std, word_count)
     else:
         md_score = 100
 
+    # Klişe skoru (0-100)
     if cliche_count == 0:
         cliche_score = 0
     elif cliche_count <= 2:
@@ -628,6 +713,7 @@ def calculate_ai_score(markdown_count, cliche_count, burstiness_std, word_count)
     else:
         cliche_score = 100
 
+    # Burstiness skoru (0-100) - düşük sapma = yüksek AI
     if burstiness_std < 2:
         burst_score = 90
     elif burstiness_std < 4:
@@ -639,14 +725,44 @@ def calculate_ai_score(markdown_count, cliche_count, burstiness_std, word_count)
     else:
         burst_score = 10
 
-    final_score = (md_score * 0.25) + (cliche_score * 0.40) + (burst_score * 0.35)
+    # Yazım hatası skoru (0-100) - çok az hata + uzun metin = AI şüphesi
+    if word_count >= 500 and spelling_error_count == 0:
+        spelling_score = 70
+    elif word_count >= 300 and spelling_error_count <= 1:
+        spelling_score = 50
+    elif spelling_error_count == 0:
+        spelling_score = 30
+    else:
+        spelling_score = 10
+
+    # Ağırlıklı toplam: Markdown %20, Klişeler %35, Burstiness %30, Yazım %15
+    final_score = (
+        (md_score * 0.20)
+        + (cliche_score * 0.35)
+        + (burst_score * 0.30)
+        + (spelling_score * 0.15)
+    )
 
     return {
         "total": round(final_score, 1),
         "markdown_score": md_score,
         "cliche_score": cliche_score,
         "burstiness_score": burst_score,
+        "spelling_score": spelling_score,
     }
+
+
+def get_verdict(score):
+    """AI skoruna göre net karar verir."""
+    if score >= 70:
+        return "AI", "Bu metin büyük olasılıkla yapay zeka tarafından üretilmiştir."
+    elif score >= 40:
+        return (
+            "BELİRSİZ",
+            "Bu metin hem AI hem insan tarafından üretilmiş olabilir. Kesin bir yargı için daha fazla analiz gerekir.",
+        )
+    else:
+        return "İNSAN", "Bu metin büyük olasılıkla insan tarafından yazılmıştır."
 
 
 def analyze_word_frequency(text):
@@ -659,15 +775,28 @@ def analyze_word_frequency(text):
     return top_10, len(words), len(filtered_words)
 
 
-def check_spelling(text):
-    """language_tool_python ile Türkçe yazım denetimi yapar."""
-    try:
-        tool = language_tool_python.LanguageTool("tr-TR")
-        matches = tool.check(text)
-        return matches
-    except Exception as e:
-        st.error(f"Yazım denetimi sırasında bir hata oluştu: {str(e)}")
-        return []
+def check_spelling_native(text):
+    """
+    Java gerektirmeyen yerleşik Türkçe yazım kontrolü.
+    Yaygın hataları regex kurallarıyla tespit eder.
+    """
+    errors = []
+    for pattern, correct, message in SPELLING_RULES:
+        # message None ise bu bir "doğru" kelime, hata olarak sayma
+        if message is None:
+            continue
+        matches = list(re.finditer(pattern, text, re.IGNORECASE))
+        for match in matches:
+            errors.append(
+                {
+                    "Hata": "Yazım",
+                    "Konum": f"Karakter {match.start()}",
+                    "Hatalı Metin": match.group(),
+                    "Öneriler": correct,
+                    "Açıklama": message,
+                }
+            )
+    return errors
 
 
 # ============================================================
@@ -713,16 +842,41 @@ if analyze_button:
                 found_cliches = analyze_cliches(text)
                 burstiness = analyze_burstiness(text)
                 word_count_total = len(text.split())
+                spelling_errors = check_spelling_native(text)
                 ai_score = calculate_ai_score(
                     markdown_total,
                     sum(found_cliches.values()),
                     burstiness["std_dev"],
                     word_count_total,
+                    len(spelling_errors),
                 )
                 top_words, total_words, filtered_words_count = analyze_word_frequency(
                     text
                 )
-                spelling_errors = check_spelling(text)
+
+                # Net karar
+                verdict_type, verdict_text = get_verdict(ai_score["total"])
+
+            # ============================================================
+            # NET KARAR KUTUSU
+            # ============================================================
+            if verdict_type == "AI":
+                verdict_class = "verdict-ai"
+                verdict_icon = "🤖"
+            elif verdict_type == "BELİRSİZ":
+                verdict_class = "verdict-maybe"
+                verdict_icon = "⚠️"
+            else:
+                verdict_class = "verdict-human"
+                verdict_icon = "👤"
+
+            st.markdown(
+                f'<div class="verdict-box {verdict_class}">'
+                f"{verdict_icon} KARAR: {verdict_type}<br>"
+                f'<span style="font-weight:400;font-size:0.95rem;">{verdict_text}</span>'
+                f"</div>",
+                unsafe_allow_html=True,
+            )
 
             # ============================================================
             # SONUÇLARI SEKMELERDE GÖSTER
@@ -759,24 +913,30 @@ if analyze_button:
 
                 st.subheader("Alt Analiz Sonuçları")
 
-                c1, c2, c3 = st.columns(3)
+                c1, c2, c3, c4 = st.columns(4)
                 with c1:
                     st.metric(
-                        "Markdown İzleri Skoru",
+                        "Markdown İzleri",
                         f"{ai_score['markdown_score']}%",
-                        help="Ham kopyalama izleri (kalın, başlık, kod bloğu vb.)",
+                        help="Ham kopyalama izleri",
                     )
                 with c2:
                     st.metric(
-                        "Klişe Kalıp Skoru",
+                        "Klişe Kalıplar",
                         f"{ai_score['cliche_score']}%",
-                        help="AI'ın sık kullandığı Türkçe kalıplar",
+                        help="AI Türkçe kalıpları",
                     )
                 with c3:
                     st.metric(
-                        "Tekdüzelik (Burstiness) Skoru",
+                        "Tekdüzelik",
                         f"{ai_score['burstiness_score']}%",
-                        help="Cümle uzunluk çeşitliliği (düşük = robotik)",
+                        help="Düşük = robotik",
+                    )
+                with c4:
+                    st.metric(
+                        "Yazım Temizliği",
+                        f"{ai_score['spelling_score']}%",
+                        help="Kusursuz = şüpheli",
                     )
 
                 st.markdown("---")
@@ -805,9 +965,7 @@ if analyze_button:
                     )
                     st.dataframe(cliche_df, use_container_width=True, hide_index=True)
                     st.warning(
-                        f"Toplam **{sum(found_cliches.values())}** adet AI klişe kalıbı bulundu. "
-                        f"Bu kalıplar, yapay zeka modellerinin Türkçe metin üretirken "
-                        f"sık kullandığı ifadelerdir."
+                        f"Toplam **{sum(found_cliches.values())}** adet AI klişe kalıbı bulundu."
                     )
                 else:
                     st.success("AI'ya özgü klişe kalıp bulunamadı.")
@@ -864,27 +1022,7 @@ if analyze_button:
                     st.warning(
                         f"Toplam **{len(spelling_errors)}** adet hata/uyarı bulundu."
                     )
-
-                    error_data = []
-                    for err in spelling_errors:
-                        error_data.append(
-                            {
-                                "Hata": err.ruleId if err.ruleId else "Bilinmeyen",
-                                "Konum": f"Karakter {err.offset}",
-                                "Hatalı Metin": err.context[
-                                    err.offsetInContext : err.offsetInContext
-                                    + len(err.misspelling)
-                                ]
-                                if err.misspelling
-                                else err.context,
-                                "Öneriler": ", ".join(err.replacements[:5])
-                                if err.replacements
-                                else "Öneri yok",
-                                "Açıklama": err.message[:100] if err.message else "",
-                            }
-                        )
-
-                    error_df = pd.DataFrame(error_data)
+                    error_df = pd.DataFrame(spelling_errors)
                     st.dataframe(error_df, use_container_width=True, hide_index=True)
                 else:
                     st.success("Yazım hatası bulunamadı.")
@@ -893,9 +1031,7 @@ if analyze_button:
                         st.warning(
                             f"**Kusursuzluk Paradoksu:** Metin dilbilgisi açısından kusursuz. "
                             f"Bu kadar uzun bir metinde ({word_count_total} kelime) insani hataların "
-                            f"hiç bulunmaması, metnin AI ile üretilmiş olma şüphesini artırabilir. "
-                            f"İnsan yazarlar genellikle uzun metinlerde küçük yazım veya dilbilgisi "
-                            f"hataları yaparlar."
+                            f"hiç bulunmaması, metnin AI ile üretilmiş olma şüphesini artırabilir."
                         )
 
                 st.markdown("---")
@@ -911,6 +1047,6 @@ if analyze_button:
 st.markdown("---")
 st.caption(
     "AI Site Dedektifi | Web kazıma: trafilatura | "
-    "Yazım denetimi: language-tool-python | "
+    "Yazım denetimi: yerleşik kurallar | "
     "Analiz: numpy, pandas | Arayüz: Streamlit"
 )
