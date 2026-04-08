@@ -125,11 +125,11 @@ body {
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 2rem 1.5rem; text-align: center;
   box-shadow: var(--shadow); position: relative; overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 .score-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
+  transform: none;
+  box-shadow: var(--shadow);
 }
 .score-card::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0;
@@ -167,7 +167,7 @@ body {
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--shadow);
   display: flex; align-items: center; gap: 1rem;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
   position: relative; overflow: hidden;
 }
 .metric-card::after {
@@ -175,8 +175,8 @@ body {
   background: var(--accent); opacity: 0.8;
 }
 .metric-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-lg);
+  transform: none;
+  box-shadow: var(--shadow);
 }
 .metric-icon {
   width: 40px; height: 40px; border-radius: 10px;
@@ -1076,10 +1076,14 @@ function renderRadar(clich, typo, list, pass, mono) {
         borderWidth: 2,
         pointBackgroundColor: '#6366f1',
         pointRadius: 4,
+        pointHoverRadius: 4,
+        pointHoverBorderWidth: 2,
       }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
+      animation: false,
+      transitions: { active: { animation: { duration: 0 } }, resize: { animation: { duration: 0 } } },
       scales: { r: { beginAtZero: true, max: 100, ticks: { stepSize: 25, display: false }, grid: { color: 'rgba(0,0,0,0.06)' }, pointLabels: { font: { size: 11 } } } },
       plugins: { legend: { display: false } }
     }
@@ -1167,8 +1171,8 @@ function renderCharts(sentLengths, filteredWords) {
   if (sentenceChartInstance) sentenceChartInstance.destroy();
   sentenceChartInstance = new Chart(document.getElementById('sentenceChart').getContext('2d'), {
     type: 'bar',
-    data: { labels: Object.keys(buckets), datasets: [{ label: 'Cümle Sayısı', data: Object.values(buckets), backgroundColor: ['#22c55e','#84cc16','#f59e0b','#f97316','#ef4444'], borderRadius: 6 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.04)' } }, x: { grid: { display: false } } } }
+    data: { labels: Object.keys(buckets), datasets: [{ label: 'Cümle Sayısı', data: Object.values(buckets), backgroundColor: ['#22c55e','#84cc16','#f59e0b','#f97316','#ef4444'], hoverBackgroundColor: ['#22c55e','#84cc16','#f59e0b','#f97316','#ef4444'], borderRadius: 6, hoverBorderRadius: 6 }] },
+    options: { responsive: true, maintainAspectRatio: false, animation: false, transitions: { active: { animation: { duration: 0 } }, resize: { animation: { duration: 0 } } }, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.04)' } }, x: { grid: { display: false } } } }
   });
 
   const wordCounts = {};
@@ -1177,8 +1181,8 @@ function renderCharts(sentLengths, filteredWords) {
   if (wordChartInstance) wordChartInstance.destroy();
   wordChartInstance = new Chart(document.getElementById('wordChart').getContext('2d'), {
     type: 'bar',
-    data: { labels: top12.map(([w]) => w), datasets: [{ label: 'Tekrar', data: top12.map(([,c]) => c), backgroundColor: '#6366f1', borderRadius: 6 }] },
-    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.04)' } }, y: { grid: { display: false } } } }
+    data: { labels: top12.map(([w]) => w), datasets: [{ label: 'Tekrar', data: top12.map(([,c]) => c), backgroundColor: '#6366f1', hoverBackgroundColor: '#6366f1', borderRadius: 6, hoverBorderRadius: 6 }] },
+    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', animation: false, transitions: { active: { animation: { duration: 0 } }, resize: { animation: { duration: 0 } } }, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.04)' } }, y: { grid: { display: false } } } }
   });
 }
 
