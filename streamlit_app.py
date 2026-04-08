@@ -421,7 +421,12 @@ SURFACE_ISSUE_PATTERNS = [
         "suggestion": "Noktalama işaretinden önce boşluk olmamalı",
     },
     {
-        "pattern": r"(?<=[,.!?;:])(?=\S)",
+        "pattern": r"(?<=\.)(?=[A-Za-zÇĞİÖŞÜçğıöşü])",
+        "label": "Boşluk",
+        "suggestion": "Noktadan sonra harf geliyorsa boşluk bırakılmalı",
+    },
+    {
+        "pattern": r"(?<=[,:;!?])(?=[A-Za-zÇĞİÖŞÜçğıöşü])",
         "label": "Boşluk",
         "suggestion": "Noktalama işaretinden sonra boşluk bırakılmalı",
     },
@@ -752,6 +757,15 @@ def count_matches(text: str, pattern: str) -> int:
     return len(re.findall(pattern, text, flags=re.IGNORECASE))
 
 
+def normalize_extracted_text(text: str) -> str:
+    cleaned = html.unescape(text)
+    cleaned = re.sub(r"</?[a-zA-Z][^>]{0,200}>", " ", cleaned)
+    cleaned = re.sub(r"\r\n?", "\n", cleaned)
+    cleaned = re.sub(r"[ \t]+", " ", cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
+
+
 def collect_surface_issues(text: str) -> list[dict]:
     issues: list[dict] = []
     for rule in SURFACE_ISSUE_PATTERNS:
@@ -1006,26 +1020,26 @@ def score_color_hex(score: float) -> str:
 def score_desc(score: float, kind: str) -> str:
     if kind == "ai":
         return (
-            "Yüksek YZ olasılığı"
+            "Yüksek AI sinyali"
             if score > 60
-            else "Orta seviye"
+            else "Orta AI sinyali"
             if score >= 30
-            else "Düşük olasılık"
+            else "Düşük AI sinyali"
         )
     if kind == "repeat":
         return (
-            "Yüksek tekrar"
+            "Yüksek tekrar yoğunluğu"
             if score > 60
-            else "Orta tekrar"
+            else "Orta tekrar yoğunluğu"
             if score >= 30
-            else "Az tekrar"
+            else "Düşük tekrar yoğunluğu"
         )
     return (
-        "Yüksek orijinallik"
+        "Yüksek özgünlük görünümü"
         if score > 60
-        else "Orta seviye"
+        else "Orta özgünlük görünümü"
         if score >= 30
-        else "Düşük orijinallik"
+        else "Düşük özgünlük görünümü"
     )
 
 
@@ -1054,8 +1068,8 @@ def fetch_article(url: str) -> dict:
         markdown_text = plain_text
 
     return {
-        "plain_text": plain_text.strip(),
-        "structured_text": (markdown_text or plain_text).strip(),
+        "plain_text": normalize_extracted_text(plain_text),
+        "structured_text": normalize_extracted_text(markdown_text or plain_text),
     }
 
 
@@ -1211,75 +1225,75 @@ def analyze_text(plain_text: str, structured_text: str) -> dict:
     if found_cliches:
         findings.append(
             {
-                "text": f"{len(found_cliches)} adet klişe ifade tespit edildi",
+                "text": f"Klişe ifade sayısı: {len(found_cliches)}",
                 "badge": "Klişe",
             }
         )
     if typo_count:
         findings.append(
             {
-                "text": f"{typo_count} adet tipografik karakter kullanımı bulundu",
+                "text": f"Tipografik karakter sayısı: {typo_count}",
                 "badge": "YZ İşareti",
             }
         )
     if burstiness < 0.45:
         findings.append(
             {
-                "text": f"Cümle ritmi tekdüze görünüyor (burstiness: {burstiness:.2f})",
+                "text": f"Burstiness düşük: {burstiness:.2f}",
                 "badge": "YZ İşareti",
             }
         )
     if passive_count:
         findings.append(
-            {"text": f"{passive_count} adet pasif yapı bulundu", "badge": "YZ İşareti"}
+            {"text": f"Pasif yapı sayısı: {passive_count}", "badge": "YZ İşareti"}
         )
     if list_lines:
         findings.append(
-            {"text": f"{list_lines} adet liste satırı bulundu", "badge": "YZ İşareti"}
+            {"text": f"Liste satırı sayısı: {list_lines}", "badge": "YZ İşareti"}
         )
     if heading_lines:
         findings.append(
-            {"text": f"{heading_lines} adet başlık satırı bulundu", "badge": "Temiz"}
+            {"text": f"Başlık satırı sayısı: {heading_lines}", "badge": "Temiz"}
         )
     if similar_pairs_jaccard:
         findings.append(
             {
-                "text": f"{len(similar_pairs_jaccard)} adet kelime bazlı tekrar tespit edildi",
+                "text": f"Kelime bazlı tekrar çifti: {len(similar_pairs_jaccard)}",
                 "badge": "Tekrar",
             }
         )
     if semantic_pairs:
         findings.append(
             {
-                "text": f"{len(semantic_pairs)} adet anlamsal tekrar bulundu",
+                "text": f"Anlamsal tekrar çifti: {len(semantic_pairs)}",
                 "badge": "Anlamsal",
             }
         )
     if repeated_trigrams:
         findings.append(
             {
-                "text": f"{len(repeated_trigrams)} adet tekrar eden trigram bulundu",
+                "text": f"Tekrar eden trigram sayısı: {len(repeated_trigrams)}",
                 "badge": "Tekrar",
             }
         )
     if surface_issues:
         findings.append(
             {
-                "text": f"{len(surface_issues)} adet yazım / boşluk / noktalama uyarısı bulundu",
+                "text": f"Yüzeysel dil uyarısı sayısı: {len(surface_issues)}",
                 "badge": "Dil Uyarısı",
             }
         )
     if punctuation_variety <= 2:
         findings.append(
             {
-                "text": "Noktalama çeşitliliği düşük, metin ritmi mekanik olabilir",
+                "text": f"Noktalama çeşitliliği düşük: {punctuation_variety}",
                 "badge": "YZ İşareti",
             }
         )
     if paragraph_count:
         findings.append(
             {
-                "text": f"{paragraph_count} paragraf üzerinden yapısal analiz üretildi",
+                "text": f"Paragraf sayısı: {paragraph_count}",
                 "badge": "Temiz",
             }
         )
@@ -1289,20 +1303,10 @@ def analyze_text(plain_text: str, structured_text: str) -> dict:
         )
 
     summary = (
-        f"Metin {word_count} kelime, {sentence_count} cümle ve {paragraph_count} paragraftan oluşuyor. "
-        f"Sözcük çeşitliliği %{ttr * 100:.1f}, ortalama cümle uzunluğu {avg_sentence_length:.1f} kelime ve yapısal kalite skoru {structure_score:.0f}/100 seviyesinde. "
+        f"{word_count} kelime, {sentence_count} cümle, {paragraph_count} paragraf. "
+        f"AI {ai_score}/100, tekrar {repeat_score}/100, orijinallik {originality_score}/100. "
+        f"Öne çıkan sinyaller: {len(found_cliches)} klişe, {len(all_similar_pairs)} benzer cümle çifti, {len(repeated_trigrams)} tekrar eden trigram."
     )
-    if ai_score > 60:
-        summary += "Yapay zeka sinyalleri güçlü: klişe yoğunluğu, düşük ritim çeşitliliği veya pasif yapı kullanımı dikkat çekiyor. "
-    elif ai_score >= 30:
-        summary += "Yapay zeka sinyalleri orta seviyede; bazı şüpheli örüntüler var ama tek başına kesin karar vermek doğru olmaz. "
-    else:
-        summary += (
-            "Yapay zeka skoru düşük; metin ritmi ve yapısı daha doğal görünüyor. "
-        )
-    if repeat_score > 40:
-        summary += f"Tekrar tarafında {len(similar_pairs_jaccard)} kelime bazlı, {len(semantic_pairs)} anlamsal tekrar ve {len(repeated_trigrams)} tekrar eden trigram öne çıkıyor. "
-    summary += f"Analiz güveni {confidence_score}/100, genel orijinallik skoru ise {originality_score}/100 olarak hesaplandı."
 
     return {
         "lang": lang,
@@ -1710,7 +1714,7 @@ if result:
                 render_gauges(gauge_items)
         with right:
             with st.container(border=True):
-                st.markdown("##### Genel Rapor Özeti")
+                st.markdown("##### Kısa Özet")
                 st.write(result["summary"])
 
         with st.container(border=True):
