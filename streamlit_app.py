@@ -272,6 +272,7 @@ st.markdown(
     .badge-clean { background: var(--good-soft); color: var(--good); }
     .badge-cliche { background: #fff7d6; color: #b45309; }
     .badge-semantic { background: #eef2ff; color: #4f46e5; }
+    .badge-warning { background: #fff7d6; color: #b45309; }
 
     .repeat-box {
         background: #fafafa;
@@ -347,6 +348,21 @@ TR_CLICHES = [
     "göz ardı edilmemelidir",
     "bu doğrultuda",
     "önemle vurgulanmalıdır",
+    "önemli bir rol oynamaktadır",
+    "günümüz dünyasında",
+    "unutulmamalıdır ki",
+    "bir diğer önemli nokta",
+    "bu noktada",
+    "aynı zamanda",
+    "ele alındığında",
+    "değerlendirildiğinde",
+    "dikkate alındığında",
+    "büyük önem taşımaktadır",
+    "kayda değer bir şekilde",
+    "kritik bir öneme sahiptir",
+    "genel çerçevede",
+    "ileri düzeyde",
+    "ön plana çıkmaktadır",
 ]
 
 EN_CLICHES = [
@@ -360,6 +376,16 @@ EN_CLICHES = [
     "needless to say",
     "first and foremost",
     "last but not least",
+    "in this context",
+    "from this perspective",
+    "it should be noted that",
+    "a key point is",
+    "it is important to emphasize",
+    "overall",
+    "generally speaking",
+    "when considering",
+    "as a result",
+    "in other words",
 ]
 
 PASSIVE_TR = [
@@ -369,6 +395,47 @@ PASSIVE_TR = [
 ]
 
 TYPO_PATTERNS = [r"—", r"–", r"…", r"[“”]", r"[‘’]"]
+
+SURFACE_ISSUE_PATTERNS = [
+    {"pattern": r"\bherşey\b", "label": "Yazım", "suggestion": "her şey"},
+    {"pattern": r"\bhersey\b", "label": "Yazım", "suggestion": "her şey"},
+    {"pattern": r"\bbirşey\b", "label": "Yazım", "suggestion": "bir şey"},
+    {"pattern": r"\bbişey\b", "label": "Yazım", "suggestion": "bir şey"},
+    {"pattern": r"\byanlız\b", "label": "Yazım", "suggestion": "yalnız"},
+    {"pattern": r"\byalniz\b", "label": "Yazım", "suggestion": "yalnız"},
+    {"pattern": r"\byalnış\b", "label": "Yazım", "suggestion": "yanlış"},
+    {"pattern": r"\byanlis\b", "label": "Yazım", "suggestion": "yanlış"},
+    {"pattern": r"\bdeil\b", "label": "Yazım", "suggestion": "değil"},
+    {"pattern": r"\bşarz\b", "label": "Yazım", "suggestion": "şarj"},
+    {"pattern": r"\borjinal\b", "label": "Yazım", "suggestion": "orijinal"},
+    {"pattern": r"\byanısıra\b", "label": "Yazım", "suggestion": "yanı sıra"},
+    {"pattern": r"\bbir çok\b", "label": "Yazım", "suggestion": "birçok"},
+    {"pattern": r"\bhiç bir\b", "label": "Yazım", "suggestion": "hiçbir"},
+    {"pattern": r"\byapıcam\b", "label": "Yazım", "suggestion": "yapacağım"},
+    {"pattern": r"\bedicem\b", "label": "Yazım", "suggestion": "edeceğim"},
+    {"pattern": r"\bgelicem\b", "label": "Yazım", "suggestion": "geleceğim"},
+    {"pattern": r"\bgidicem\b", "label": "Yazım", "suggestion": "gideceğim"},
+    {
+        "pattern": r"\s+[,.!?;:]",
+        "label": "Boşluk",
+        "suggestion": "Noktalama işaretinden önce boşluk olmamalı",
+    },
+    {
+        "pattern": r"(?<=[,.!?;:])(?=\S)",
+        "label": "Boşluk",
+        "suggestion": "Noktalama işaretinden sonra boşluk bırakılmalı",
+    },
+    {
+        "pattern": r" {2,}",
+        "label": "Boşluk",
+        "suggestion": "Fazla boşluklar temizlenmeli",
+    },
+    {
+        "pattern": r"[!?.,]{3,}",
+        "label": "Noktalama",
+        "suggestion": "Aşırı noktalama azaltılmalı",
+    },
+]
 
 STOPWORDS_TR = {
     "bir",
@@ -677,8 +744,31 @@ def clamp(value: float, min_value: float, max_value: float) -> float:
     return min(max_value, max(min_value, value))
 
 
+def mean(values: list[float]) -> float:
+    return sum(values) / len(values) if values else 0.0
+
+
 def count_matches(text: str, pattern: str) -> int:
     return len(re.findall(pattern, text, flags=re.IGNORECASE))
+
+
+def collect_surface_issues(text: str) -> list[dict]:
+    issues: list[dict] = []
+    for rule in SURFACE_ISSUE_PATTERNS:
+        for match in re.finditer(rule["pattern"], text, flags=re.IGNORECASE):
+            sample = match.group(0)
+            if sample == "":
+                start = max(0, match.start() - 12)
+                end = min(len(text), match.end() + 12)
+                sample = text[start:end]
+            issues.append(
+                {
+                    "Kategori": rule["label"],
+                    "Örnek": sample.strip(),
+                    "Öneri": rule["suggestion"],
+                }
+            )
+    return issues[:150]
 
 
 def get_paragraphs(text: str) -> list[str]:
@@ -975,6 +1065,7 @@ def analyze_text(plain_text: str, structured_text: str) -> dict:
     paragraphs = get_paragraphs(plain_text)
     all_words = get_words(plain_text)
     filtered_words = get_words_filtered(plain_text, lang)
+    surface_issues = collect_surface_issues(plain_text)
     all_cliches = TR_CLICHES if lang == "tr" else EN_CLICHES
 
     found_cliches: list[str] = []
@@ -1171,6 +1262,13 @@ def analyze_text(plain_text: str, structured_text: str) -> dict:
                 "badge": "Tekrar",
             }
         )
+    if surface_issues:
+        findings.append(
+            {
+                "text": f"{len(surface_issues)} adet yazım / boşluk / noktalama uyarısı bulundu",
+                "badge": "Dil Uyarısı",
+            }
+        )
     if punctuation_variety <= 2:
         findings.append(
             {
@@ -1234,6 +1332,7 @@ def analyze_text(plain_text: str, structured_text: str) -> dict:
         "all_similar_pairs": all_similar_pairs,
         "repeated_trigrams": repeated_trigrams,
         "repeated_words": repeated_words,
+        "surface_issues": surface_issues,
         "top_words": top_words,
         "sentence_lengths": sentence_lengths,
         "findings": findings,
@@ -1283,6 +1382,7 @@ def render_findings(findings: list[dict]):
         "Temiz": "badge-clean",
         "Klişe": "badge-cliche",
         "Anlamsal": "badge-semantic",
+        "Dil Uyarısı": "badge-warning",
     }
     rows = []
     for finding in findings:
@@ -1351,6 +1451,12 @@ def copyable_report_text(result: dict, url: str) -> str:
     lines.extend(
         f"- [{finding['badge']}] {finding['text']}" for finding in result["findings"]
     )
+    if result["surface_issues"]:
+        lines.extend(["", "DIL UYARILARI:"])
+        lines.extend(
+            f"- [{issue['Kategori']}] {issue['Örnek']} -> {issue['Öneri']}"
+            for issue in result["surface_issues"][:20]
+        )
     lines.extend(["", result["summary"]])
     return "\n".join(lines)
 
@@ -1645,6 +1751,14 @@ if result:
                     ],
                     "pill-trigram",
                 )
+
+        with st.container(border=True):
+            st.markdown("##### Yazım / Boşluk / Noktalama Uyarıları")
+            if result["surface_issues"]:
+                issue_df = pd.DataFrame(result["surface_issues"])
+                st.dataframe(issue_df, use_container_width=True, hide_index=True)
+            else:
+                st.info("Belirgin yazım veya yüzeysel dil uyarısı bulunamadı.")
 
     with tabs[3]:
         chart_col1, chart_col2 = st.columns(2)
