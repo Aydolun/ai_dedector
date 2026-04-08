@@ -1009,6 +1009,13 @@ def ring_svg(score: float, color: str, size: int = 124) -> str:
 """
 
 
+def render_html_block(markup: str):
+    if hasattr(st, "html"):
+        st.html(markup)
+    else:
+        st.markdown(markup, unsafe_allow_html=True)
+
+
 def score_color_hex(score: float) -> str:
     if score > 60:
         return "#dc2626"
@@ -1359,7 +1366,7 @@ def render_score_card(title: str, score: float, description: str, css_class: str
         <div class="score-desc">{description}</div>
     </div>
     """
-    st.markdown(html_block, unsafe_allow_html=True)
+    render_html_block(html_block)
 
 
 def render_gauges(items: list[dict]):
@@ -1374,9 +1381,7 @@ def render_gauges(items: list[dict]):
             </div>
             """
         )
-    st.markdown(
-        f"<div class='gauge-list'>{''.join(rows)}</div>", unsafe_allow_html=True
-    )
+    render_html_block(f"<div class='gauge-list'>{''.join(rows)}</div>")
 
 
 def render_findings(findings: list[dict]):
@@ -1399,7 +1404,7 @@ def render_findings(findings: list[dict]):
             </div>
             """
         )
-    st.markdown("".join(rows), unsafe_allow_html=True)
+    render_html_block("".join(rows))
 
 
 def render_repeat_group(
@@ -1411,15 +1416,14 @@ def render_repeat_group(
     st.markdown(f"#### {title}")
     for pair in pairs[:20]:
         pct = round(pair[score_key] * 100)
-        st.markdown(
+        render_html_block(
             f"""
             <div class="repeat-box">
                 <div class="repeat-score" style="color:{color};">%{pct} {label}</div>
                 <div class="repeat-text"><em>{html.escape(pair["a"])}</em></div>
                 <div class="repeat-text"><em>{html.escape(pair["b"])}</em></div>
             </div>
-            """,
-            unsafe_allow_html=True,
+            """
         )
 
 
@@ -1433,7 +1437,7 @@ def render_pills(title: str, items: list[str], css_class: str):
         for item in unique_items[:24]
     )
     st.markdown(f"**{title}**", unsafe_allow_html=False)
-    st.markdown(f"<div class='pill-wrap'>{pills}</div>", unsafe_allow_html=True)
+    render_html_block(f"<div class='pill-wrap'>{pills}</div>")
 
 
 def copyable_report_text(result: dict, url: str) -> str:
@@ -1471,12 +1475,9 @@ if "analysis_url" not in st.session_state:
     st.session_state.analysis_url = ""
 
 
-st.markdown(
-    "<div class='hero-title'>Metin Diligence Analizörü</div>", unsafe_allow_html=True
-)
-st.markdown(
-    "<div class='hero-subtitle'>Bir web sitesi URL'si girin. Sayfadaki ana metin backend üzerinden çekilsin, sonra yapay zeka sinyalleri, tekrar örüntüleri ve özgünlük yapısı daha gerçekçi heuristiklerle değerlendirilsin.</div>",
-    unsafe_allow_html=True,
+render_html_block("<div class='hero-title'>Metin Diligence Analizörü</div>")
+render_html_block(
+    "<div class='hero-subtitle'>Bir web sitesi URL'si girin. Sayfadaki ana metin backend üzerinden çekilsin, sonra yapay zeka sinyalleri, tekrar örüntüleri ve özgünlük yapısı daha gerçekçi heuristiklerle değerlendirilsin.</div>"
 )
 
 
@@ -1545,23 +1546,6 @@ if result:
 
     overview_col, confidence_col = st.columns([1.4, 1])
     with overview_col:
-        st.markdown(
-            "<div class='surface'><div class='section-title'>Kaynak Görünümü</div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            f"""
-            <div class='mini-grid'>
-                <div class='mini-stat'><div class='mini-stat-value'>{result["paragraph_count"]}</div><div class='mini-stat-label'>Paragraf</div></div>
-                <div class='mini-stat'><div class='mini-stat-value'>{result["avg_sentence_length"]:.1f}</div><div class='mini-stat-label'>Ort. Cümle Uzunluğu</div></div>
-                <div class='mini-stat'><div class='mini-stat-value'>{result["punctuation_variety"]}</div><div class='mini-stat-label'>Noktalama Çeşidi</div></div>
-                <div class='mini-stat'><div class='mini-stat-value'>{round(result["lexical_richness"])}</div><div class='mini-stat-label'>Lexical Richness</div></div>
-                <div class='mini-stat'><div class='mini-stat-value'>{len(result["similar_pairs_jaccard"])}</div><div class='mini-stat-label'>Kelime Tekrarı</div></div>
-                <div class='mini-stat'><div class='mini-stat-value'>{len(result["semantic_pairs"])}</div><div class='mini-stat-label'>Anlamsal Tekrar</div></div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
         chips = []
         chips.append(
             (
@@ -1602,8 +1586,21 @@ if result:
         chips_html = "".join(
             f"<span class='chip {css}'>{text}</span>" for text, css in chips
         )
-        st.markdown(
-            f"<div class='chip-row'>{chips_html}</div></div>", unsafe_allow_html=True
+        render_html_block(
+            f"""
+            <div class='surface'>
+                <div class='section-title'>Kaynak Görünümü</div>
+                <div class='mini-grid'>
+                    <div class='mini-stat'><div class='mini-stat-value'>{result["paragraph_count"]}</div><div class='mini-stat-label'>Paragraf</div></div>
+                    <div class='mini-stat'><div class='mini-stat-value'>{result["avg_sentence_length"]:.1f}</div><div class='mini-stat-label'>Ort. Cümle Uzunluğu</div></div>
+                    <div class='mini-stat'><div class='mini-stat-value'>{result["punctuation_variety"]}</div><div class='mini-stat-label'>Noktalama Çeşidi</div></div>
+                    <div class='mini-stat'><div class='mini-stat-value'>{round(result["lexical_richness"])}</div><div class='mini-stat-label'>Lexical Richness</div></div>
+                    <div class='mini-stat'><div class='mini-stat-value'>{len(result["similar_pairs_jaccard"])}</div><div class='mini-stat-label'>Kelime Tekrarı</div></div>
+                    <div class='mini-stat'><div class='mini-stat-value'>{len(result["semantic_pairs"])}</div><div class='mini-stat-label'>Anlamsal Tekrar</div></div>
+                </div>
+                <div class='chip-row'>{chips_html}</div>
+            </div>
+            """
         )
 
     with confidence_col:
@@ -1614,12 +1611,10 @@ if result:
             if result["confidence_score"] >= 50
             else 75
         )
-        st.markdown(
-            "<div class='surface'><div class='section-title'>Analiz Güveni</div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown(
+        render_html_block(
             f"""
+            <div class='surface'>
+            <div class='section-title'>Analiz Güveni</div>
             <div style='display:flex;align-items:center;gap:1rem;'>
                 <div style='font-size:2rem;font-weight:800;color:{confidence_color};min-width:64px;'>{result["confidence_score"]}</div>
                 <div style='flex:1;'>
@@ -1632,8 +1627,7 @@ if result:
                 </div>
             </div>
             </div>
-            """,
-            unsafe_allow_html=True,
+            """
         )
 
     tabs = st.tabs(["Özet", "Tekrarlar", "İşaretler", "Grafikler", "Tam Metin"])
@@ -1818,9 +1812,8 @@ if result:
     with tabs[4]:
         st.markdown("##### Çekilen Metin (Tamamı)")
         st.caption("Bu bölüm kırpılmadan çıkarılan metnin tamamını gösterir.")
-        st.markdown(
-            f"<div class='full-text-box'>{html.escape(result['plain_text'])}</div>",
-            unsafe_allow_html=True,
+        render_html_block(
+            f"<div class='full-text-box'>{html.escape(result['plain_text'])}</div>"
         )
 
     report_text = copyable_report_text(result, source_url)
