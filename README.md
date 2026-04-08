@@ -1,5 +1,5 @@
 ---
-title: Metin Diligence Analizörü
+title: İçerik Kalitesi ve Özgünlük Analizi
 emoji: 🧠
 colorFrom: indigo
 colorTo: purple
@@ -11,16 +11,16 @@ pinned: false
 license: mit
 ---
 
-# Metin Diligence Analizörü
+# İçerik Kalitesi ve Özgünlük Analizi
 
-Bir web sitesi URL'si girin. Uygulama sayfadaki ana metni çıkarıp yapay zeka sinyalleri, tekrar örüntüleri, anlamsal benzerlik ve genel özgünlük yapısını Streamlit arayüzünde analiz etsin.
+Bir web sitesi URL'si girin. Uygulama sayfadaki ana metni çıkarıp yapay zekâ sinyalleri, tekrar örüntüleri, anlamsal benzerlik ve genel özgünlük yapısını Türkçe Streamlit arayüzünde analiz etsin.
 
 ## Özellikler
 
 - **URL tabanlı analiz**: `trafilatura` ile ana metni backend tarafında çıkarır
 - **Yapay zeka sinyalleri**: klişe ifade, tipografik karakter, pasif yapı, liste ve başlık yoğunluğu
 - **Tekrar analizi**: kelime bazlı tekrar, anlamsal tekrar ve trigram tekrarları
-- **İçerik kalitesi**: TTR, burstiness, yapı skoru, lexical richness ve analiz güveni
+- **İçerik kalitesi**: TTR, burstiness, yapı skoru, sözcük zenginliği ve analiz güveni
 - **Profesyonel arayüz**: skor kartları, tablolar, grafikler, kısa özet ve tam metin görünümü
 - **TXT rapor indirme**: analiz sonucunu dışa aktarır
 

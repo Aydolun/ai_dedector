@@ -12,7 +12,7 @@ import trafilatura
 
 
 st.set_page_config(
-    page_title="Metin Diligence Analizörü",
+    page_title="İçerik Kalitesi ve Özgünlük Analizi",
     page_icon="🧠",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -1107,26 +1107,26 @@ def score_color_hex(score: float) -> str:
 def score_desc(score: float, kind: str) -> str:
     if kind == "ai":
         return (
-            "Yüksek AI sinyali"
+            "Yapay zekâ ihtimali yüksek"
             if score > 60
-            else "Orta AI sinyali"
+            else "Yapay zekâ ihtimali orta"
             if score >= 30
-            else "Düşük AI sinyali"
+            else "Yapay zekâ ihtimali düşük"
         )
     if kind == "repeat":
         return (
-            "Yüksek tekrar yoğunluğu"
+            "Tekrar yoğunluğu yüksek"
             if score > 60
-            else "Orta tekrar yoğunluğu"
+            else "Tekrar yoğunluğu orta"
             if score >= 30
-            else "Düşük tekrar yoğunluğu"
+            else "Tekrar yoğunluğu düşük"
         )
     return (
-        "Yüksek özgünlük görünümü"
+        "Özgünlük görünümü yüksek"
         if score > 60
-        else "Orta özgünlük görünümü"
+        else "Özgünlük görünümü orta"
         if score >= 30
-        else "Düşük özgünlük görünümü"
+        else "Özgünlük görünümü düşük"
     )
 
 
@@ -1391,7 +1391,7 @@ def analyze_text(plain_text: str, structured_text: str) -> dict:
 
     summary = (
         f"{word_count} kelime, {sentence_count} cümle, {paragraph_count} paragraf. "
-        f"AI {ai_score}/100, tekrar {repeat_score}/100, orijinallik {originality_score}/100. "
+        f"Yapay zekâ skoru {ai_score}/100, tekrar skoru {repeat_score}/100, özgünlük skoru {originality_score}/100. "
         f"Öne çıkan sinyaller: {len(found_cliches)} klişe, {len(all_similar_pairs)} benzer cümle çifti, {len(repeated_trigrams)} tekrar eden trigram."
     )
 
@@ -1527,10 +1527,10 @@ def copyable_report_text(result: dict, url: str) -> str:
         f"Kaynak: {url}",
         f"Yapay Zeka Skoru: {result['ai_score']}/100",
         f"Tekrar Skoru: {result['repeat_score']}/100",
-        f"Orijinallik Skoru: {result['originality_score']}/100",
+        f"Özgünlük Skoru: {result['originality_score']}/100",
         f"Analiz Guveni: {result['confidence_score']}/100",
         f"Yapi Skoru: {round(result['structure_score'])}/100",
-        f"Lexical Richness: {round(result['lexical_richness'])}/100",
+        f"Sözcük Zenginliği: {round(result['lexical_richness'])}/100",
         "",
         f"Kelime: {result['word_count']} | Cumle: {result['sentence_count']} | Paragraf: {result['paragraph_count']} | TTR: %{result['ttr'] * 100:.1f}",
         "",
@@ -1555,9 +1555,9 @@ if "analysis_url" not in st.session_state:
     st.session_state.analysis_url = ""
 
 
-render_html_block("<div class='hero-title'>Metin Diligence Analizörü</div>")
+render_html_block("<div class='hero-title'>İçerik Kalitesi ve Özgünlük Analizi</div>")
 render_html_block(
-    "<div class='hero-subtitle'>Bir web sitesi URL'si girin. Sayfadaki ana metin backend üzerinden çekilsin, sonra yapay zeka sinyalleri, tekrar örüntüleri ve özgünlük yapısı daha gerçekçi heuristiklerle değerlendirilsin.</div>"
+    "<div class='hero-subtitle'>Bir haber, blog ya da içerik sayfasının bağlantısını girin. Metin otomatik olarak çekilsin; tekrar oranı, yapay zekâ izleri, sözcük zenginliği ve genel özgünlük düzeyi anlaşılır Türkçe açıklamalarla değerlendirilsin.</div>"
 )
 
 
@@ -1612,7 +1612,7 @@ if result:
         )
     with hero_cols[2]:
         render_score_card(
-            "Orijinallik Skoru",
+            "Özgünlük Skoru",
             result["originality_score"],
             score_desc(result["originality_score"], "original"),
             "original",
@@ -1629,7 +1629,7 @@ if result:
         chips = []
         chips.append(
             (
-                f"AI Risk {result['ai_score']}",
+                f"YZ Riski {result['ai_score']}",
                 "chip-risk"
                 if result["ai_score"] > 60
                 else "chip-warn"
@@ -1649,7 +1649,7 @@ if result:
         )
         chips.append(
             (
-                f"Orijinallik {result['originality_score']}",
+                f"Özgünlük {result['originality_score']}",
                 "chip-safe"
                 if result["originality_score"] >= 65
                 else "chip-warn"
@@ -1669,12 +1669,12 @@ if result:
         render_html_block(
             f"""
             <div class='surface'>
-                <div class='section-title'>Kaynak Görünümü</div>
+                <div class='section-title'>İçerik Özeti</div>
                 <div class='mini-grid'>
                     <div class='mini-stat'><div class='mini-stat-value'>{result["paragraph_count"]}</div><div class='mini-stat-label'>Paragraf</div></div>
                     <div class='mini-stat'><div class='mini-stat-value'>{result["avg_sentence_length"]:.1f}</div><div class='mini-stat-label'>Ort. Cümle Uzunluğu</div></div>
                     <div class='mini-stat'><div class='mini-stat-value'>{result["punctuation_variety"]}</div><div class='mini-stat-label'>Noktalama Çeşidi</div></div>
-                    <div class='mini-stat'><div class='mini-stat-value'>{round(result["lexical_richness"])}</div><div class='mini-stat-label'>Lexical Richness</div></div>
+                    <div class='mini-stat'><div class='mini-stat-value'>{round(result["lexical_richness"])}</div><div class='mini-stat-label'>Sözcük Zenginliği</div></div>
                     <div class='mini-stat'><div class='mini-stat-value'>{len(result["similar_pairs_jaccard"])}</div><div class='mini-stat-label'>Kelime Tekrarı</div></div>
                     <div class='mini-stat'><div class='mini-stat-value'>{len(result["semantic_pairs"])}</div><div class='mini-stat-label'>Anlamsal Tekrar</div></div>
                 </div>
@@ -1779,7 +1779,7 @@ if result:
                         "color": "#16a34a",
                     },
                     {
-                        "label": "Lexical",
+                        "label": "Sözcük",
                         "value": round(result["lexical_richness"]),
                         "pct": result["lexical_richness"],
                         "color": "#0f766e",
