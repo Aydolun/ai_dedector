@@ -1,31 +1,41 @@
 ---
-title: AI Site Dedektifi
-emoji: 🔍
+title: Metin Diligence Analizörü
+emoji: 🧠
 colorFrom: indigo
 colorTo: purple
 sdk: streamlit
 sdk_version: "1.40.2"
-app_file: app.py
+app_file: streamlit_app.py
 pinned: false
 license: mit
 ---
 
-# AI Site Dedektifi
+# Metin Diligence Analizörü
 
-Bir web sitesi URL'si girin, uygulama metni otomatik olarak çekip yapay zeka tarafından üretilmiş olma ihtimalini analiz etsin.
+Bir web sitesi URL'si girin. Uygulama sayfadaki ana metni çıkarıp yapay zeka sinyalleri, tekrar örüntüleri, anlamsal benzerlik ve genel özgünlük yapısını Streamlit arayüzünde analiz etsin.
 
 ## Özellikler
 
-- **Web Scraping**: trafilatura ile temiz metin çıkarma
-- **Markdown Tespiti**: Kalın, başlık, kod bloğu gibi ham kopyalama izleri
-- **AI Klişeleri**: Türkçe AI kalıplarının frekans analizi
-- **Burstiness Analizi**: Cümle uzunluk çeşitliliği (robotik vs insansı)
-- **Kelime Frekansı**: En çok tekrar eden kelimeler
-- **Yazım Denetimi**: language-tool-python ile Türkçe yazım kontrolü
+- **URL tabanlı analiz**: `trafilatura` ile ana metni backend tarafında çıkarır
+- **Yapay zeka sinyalleri**: klişe ifade, tipografik karakter, pasif yapı, liste ve başlık yoğunluğu
+- **Tekrar analizi**: kelime bazlı tekrar, anlamsal tekrar ve trigram tekrarları
+- **İçerik kalitesi**: TTR, burstiness, yapı skoru, lexical richness ve analiz güveni
+- **Profesyonel arayüz**: skor kartları, tablolar, grafikler, kısa özet ve tam metin görünümü
+- **TXT rapor indirme**: analiz sonucunu dışa aktarır
 
-## Kurulum
+## Çalıştırma
 
 ```bash
 pip install -r requirements.txt
-streamlit run app.py
+streamlit run streamlit_app.py
 ```
+
+## Deploy
+
+Streamlit Community Cloud veya Hugging Face Spaces için ana dosya:
+
+```text
+streamlit_app.py
+```
+
+Bu repo artık sadece Streamlit sürümünü içerir.
