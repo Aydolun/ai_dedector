@@ -197,6 +197,41 @@ body {
 .metric-val { font-size: 1.3rem; font-weight: 700; line-height: 1.2; }
 .metric-lbl { font-size: 0.75rem; color: var(--text-muted); }
 
+/* INSIGHT ROW */
+.insight-row {
+  display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+@media (max-width: 768px) { .insight-row { grid-template-columns: 1fr; } }
+.insight-card {
+  background: var(--bg-card); border: 0.5px solid var(--border);
+  border-radius: var(--radius); padding: 1.1rem 1.2rem; box-shadow: var(--shadow);
+}
+.insight-title {
+  font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-muted); font-weight: 700; margin-bottom: 0.55rem;
+}
+.insight-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;
+}
+@media (max-width: 560px) { .insight-grid { grid-template-columns: 1fr 1fr; } }
+.insight-stat { min-width: 0; }
+.insight-stat-value { font-size: 1.15rem; font-weight: 700; }
+.insight-stat-label { font-size: 0.75rem; color: var(--text-muted); }
+.confidence-wrap { display: flex; align-items: center; gap: 1rem; }
+.confidence-meter {
+  flex: 1; height: 10px; background: var(--border); border-radius: 999px; overflow: hidden;
+}
+.confidence-fill { height: 100%; border-radius: 999px; transition: width 1s ease; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.8rem; }
+.chip {
+  padding: 0.32rem 0.65rem; border-radius: 999px; font-size: 0.74rem;
+  border: 0.5px solid var(--border); color: var(--text-secondary); background: var(--bg);
+}
+.chip-risk { background: var(--red-bg); color: var(--red-text); border-color: transparent; }
+.chip-warn { background: var(--yellow-bg); color: var(--yellow-text); border-color: transparent; }
+.chip-safe { background: var(--green-bg); color: var(--green-text); border-color: transparent; }
+
 /* SECTION CARD */
 .section-card {
   background: var(--bg-card); border: 0.5px solid var(--border);
@@ -316,6 +351,25 @@ body {
 
     <!-- METRICS -->
     <div class="metrics-row" id="metricsRow"></div>
+
+    <!-- SOURCE + CONFIDENCE -->
+    <div class="insight-row">
+      <div class="insight-card">
+        <div class="insight-title">Kaynak Görünümü</div>
+        <div class="insight-grid" id="sourceOverview"></div>
+        <div class="chip-row" id="riskChips"></div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-title">Analiz Güveni</div>
+        <div class="confidence-wrap">
+          <div style="min-width:64px;font-size:1.5rem;font-weight:800;" id="confidenceValue">0</div>
+          <div style="flex:1;">
+            <div class="confidence-meter"><div class="confidence-fill" id="confidenceFill"></div></div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:0.55rem;" id="confidenceText"></div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- RADAR + GAUGES -->
     <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
@@ -629,6 +683,19 @@ function mean(arr) {
   return arr.length === 0 ? 0 : arr.reduce((s,v) => s+v, 0) / arr.length;
 }
 
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function countMatches(text, regex) {
+  const m = text.match(regex);
+  return m ? m.length : 0;
+}
+
+function getParagraphs(text) {
+  return text.split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
+}
+
 function scoreColor(score) {
   if (score > 60) return 'var(--red)';
   if (score >= 30) return 'var(--yellow)';
@@ -672,21 +739,57 @@ async function fetchWithProxy(url) {
 }
 
 function extractCleanText(html) {
-  let text = html;
-  text = text.replace(/<script[\s\S]*?<\/script>/gi, '');
-  text = text.replace(/<style[\s\S]*?<\/style>/gi, '');
-  text = text.replace(/<noscript[\s\S]*?<\/noscript>/gi, '');
-  text = text.replace(/<[^>]+>/g, ' ');
-  text = text.replace(/&nbsp;/g, ' ');
-  text = text.replace(/&amp;/g, '&');
-  text = text.replace(/&lt;/g, '<');
-  text = text.replace(/&gt;/g, '>');
-  text = text.replace(/&quot;/g, '"');
-  text = text.replace(/&#39;/g, "'");
-  text = text.replace(/&#[0-9]+;/g, ' ');
-  text = text.replace(/\s+/g, ' ');
-  text = text.replace(/\n\s*\n/g, '\n\n');
-  return text.trim();
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    doc.querySelectorAll('script, style, noscript, svg, nav, footer, header, aside, form, button, iframe').forEach(el => el.remove());
+
+    const candidates = [
+      'article', 'main', '[role="main"]', '.post-content', '.entry-content', '.article-content',
+      '.content', '.post', '.article', '.main-content', 'body'
+    ];
+
+    let root = null;
+    for (const selector of candidates) {
+      const node = doc.querySelector(selector);
+      if (node && node.textContent && node.textContent.trim().length > 200) {
+        root = node;
+        break;
+      }
+    }
+    if (!root) root = doc.body;
+
+    const blocks = root.querySelectorAll('h1,h2,h3,h4,h5,h6,p,li,blockquote,pre');
+    if (blocks.length) {
+      const pieces = [];
+      blocks.forEach(block => {
+        const text = block.textContent.replace(/\s+/g, ' ').trim();
+        if (text.length >= 3) pieces.push(text);
+      });
+      return pieces.join('\n\n').trim();
+    }
+
+    let text = root.textContent || '';
+    text = text.replace(/&nbsp;/g, ' ');
+    text = text.replace(/\n{3,}/g, '\n\n');
+    text = text.replace(/[ \t]+/g, ' ');
+    return text.trim();
+  } catch (e) {
+    let text = html;
+    text = text.replace(/<script[\s\S]*?<\/script>/gi, '');
+    text = text.replace(/<style[\s\S]*?<\/style>/gi, '');
+    text = text.replace(/<noscript[\s\S]*?<\/noscript>/gi, '');
+    text = text.replace(/<[^>]+>/g, ' ');
+    text = text.replace(/&nbsp;/g, ' ');
+    text = text.replace(/&amp;/g, '&');
+    text = text.replace(/&lt;/g, '<');
+    text = text.replace(/&gt;/g, '>');
+    text = text.replace(/&quot;/g, '"');
+    text = text.replace(/&#39;/g, "'");
+    text = text.replace(/&#[0-9]+;/g, ' ');
+    text = text.replace(/\s+/g, ' ');
+    return text.trim();
+  }
 }
 
 function setStatus(msg, type) {
@@ -733,6 +836,7 @@ function runAnalysis(text) {
   const sentences = getSentences(text);
   const allWords = getWords(text);
   const filteredWords = getWordsFiltered(text, lang);
+  const paragraphs = getParagraphs(text);
   const allCliches = [...(lang === 'tr' ? TR_CLICHES : []), ...(lang === 'en' ? EN_CLICHES : [])];
   const passiveList = lang === 'tr' ? PASSIVE_TR : [];
 
@@ -764,6 +868,10 @@ function runAnalysis(text) {
   const sd = stdDev(sentLengths);
   const avg = mean(sentLengths);
   const burstiness = avg > 0 ? sd / avg : 0;
+  const avgSentenceLength = avg;
+  const paragraphCount = paragraphs.length;
+  const punctuationVariety = new Set((text.match(/[,:;!?()"'“”‘’—–…-]/g) || [])).size;
+  const punctuationDensity = allWords.length > 0 ? countMatches(text, /[,:;!?]/g) / allWords.length : 0;
 
   const sentWordSets = sentences.map(s => new Set(getWordsFiltered(s, lang)));
   const similarPairsJaccard = [];
@@ -796,22 +904,37 @@ function runAnalysis(text) {
   }
   const repeatedTrigrams = Object.entries(trigramCounts).filter(([,c]) => c > 1).sort((a,b) => b[1] - a[1]);
 
+  const wordCount = allWords.length;
+  const sentenceCount = sentences.length;
+  const clicheDensity = wordCount > 0 ? (foundCliches.length / wordCount) * 1000 : 0;
+  const passiveDensity = wordCount > 0 ? (passiveCount / wordCount) * 1000 : 0;
+  const trigramDensity = wordCount > 0 ? (repeatedTrigrams.length / wordCount) * 1000 : 0;
+  const repetitionRatio = sentenceCount > 0 ? allSimilarPairs.length / sentenceCount : 0;
+  const structureScore = clamp((paragraphCount * 6) + (headingLines * 8) + (avgSentenceLength < 30 ? 12 : 0) + (punctuationVariety >= 4 ? 12 : 0), 0, 100);
+  const lexicalRichness = clamp((ttr * 100) - Math.max(0, repetitionRatio * 40), 0, 100);
+
+  // Daha gerçekçi skor modeli: yoğunluk + yapı + tekrar baskısı
   let aiScore = 0;
-  if (foundCliches.length >= 3) aiScore += 25; else if (foundCliches.length >= 1) aiScore += 12;
-  if (typoCount >= 3) aiScore += 20; else if (typoCount >= 1) aiScore += 8;
-  if (burstiness < 0.45) aiScore += 15;
-  if (listLines > 3) aiScore += 10;
-  if (headingLines > 2) aiScore += 10;
-  if (passiveCount > 2) aiScore += 10;
-  if (ttr > 0.70) aiScore += 10;
-  aiScore = Math.min(aiScore, 100);
+  aiScore += clamp(clicheDensity * 7.5, 0, 24);
+  aiScore += typoCount >= 3 ? 16 : typoCount >= 1 ? 7 : 0;
+  aiScore += burstiness < 0.36 ? 18 : burstiness < 0.48 ? 10 : 0;
+  aiScore += clamp(passiveDensity * 9, 0, 12);
+  aiScore += listLines >= 4 ? 8 : listLines >= 2 ? 4 : 0;
+  aiScore += headingLines >= 3 ? 8 : headingLines >= 1 ? 3 : 0;
+  aiScore += ttr > 0.78 ? 10 : ttr > 0.70 ? 6 : 0;
+  aiScore += punctuationVariety <= 2 && avgSentenceLength > 10 ? 7 : 0;
+  aiScore += repetitionRatio > 0.25 ? 8 : repetitionRatio > 0.12 ? 4 : 0;
+  aiScore = Math.round(clamp(aiScore, 0, 100));
 
   let repeatScore = 0;
-  repeatScore += Math.min(allSimilarPairs.length * 15, 40);
-  repeatScore += Math.min(Math.max(0, repeatedTrigrams.length - 3) * 8, 30);
-  repeatScore = Math.min(repeatScore, 100);
+  repeatScore += Math.min(similarPairsJaccard.length * 14, 36);
+  repeatScore += Math.min(semanticPairs.length * 10, 26);
+  repeatScore += Math.min(Math.max(0, repeatedTrigrams.length - 2) * 4, 20);
+  repeatScore += repetitionRatio > 0.20 ? 10 : repetitionRatio > 0.10 ? 5 : 0;
+  repeatScore = Math.round(clamp(repeatScore, 0, 100));
 
-  const originalityScore = Math.max(0, 100 - aiScore - repeatScore * 0.3);
+  const originalityScore = Math.round(clamp(35 + lexicalRichness * 0.35 + structureScore * 0.25 + Math.min(burstiness * 80, 18) - repeatScore * 0.45 - aiScore * 0.2, 0, 100));
+  const confidenceScore = Math.round(clamp((wordCount / 14) + (sentenceCount * 2.4) + (paragraphCount * 4), 18, 98));
 
   const clichPct = foundCliches.length >= 3 ? 100 : foundCliches.length >= 1 ? 50 : 0;
   const typoPct = typoCount >= 3 ? 100 : typoCount >= 1 ? 40 : 0;
@@ -828,6 +951,8 @@ function runAnalysis(text) {
   if (similarPairsJaccard.length > 0) findings.push({ text: similarPairsJaccard.length + ' adet kelime bazlı tekrar (aynı kelimeler)', badge: 'Tekrar' });
   if (semanticPairs.length > 0) findings.push({ text: semanticPairs.length + ' adet anlamsal tekrar (farklı kelimeler, aynı anlam)', badge: 'Anlamsal' });
   if (repeatedTrigrams.length > 0) findings.push({ text: repeatedTrigrams.length + ' adet tekrar eden trigram', badge: 'Tekrar' });
+  if (punctuationVariety <= 2) findings.push({ text: 'Noktalama çeşitliliği düşük, metin ritmi tekdüze görünüyor', badge: 'YZ İşareti' });
+  if (paragraphCount > 0) findings.push({ text: paragraphCount + ' paragraf üzerinden yapısal analiz yapıldı', badge: 'Temiz' });
   if (findings.length === 0) findings.push({ text: 'Önemli bir işaret tespit edilmedi', badge: 'Temiz' });
 
   let summary = '';
@@ -848,14 +973,18 @@ function runAnalysis(text) {
   if (repeatScore > 40) {
     summary += 'Tekrar skoru yüksektir (' + repeatScore + '/100). ' + similarPairsJaccard.length + ' kelime bazlı tekrar, ' + semanticPairs.length + ' anlamsal tekrar ve ' + repeatedTrigrams.length + ' tekrar eden trigram tespit edilmiştir. ';
   }
+  summary += 'Yapısal kalite ' + structureScore.toFixed(0) + '/100, sözcüksel zenginlik ise ' + lexicalRichness.toFixed(0) + '/100 görünmektedir. ';
   summary += 'Orijinallik skoru ' + originalityScore.toFixed(0) + '/100 olarak hesaplanmıştır.';
 
-  lastResults = { aiScore, repeatScore, originalityScore, allWords, sentences, ttr, burstiness, similarPairsJaccard, semanticPairs, repeatedTrigrams, findings, summary, foundCliches, typoCount, listLines, passiveCount, allSimilarPairs, sentLengths, filteredWords };
+  lastResults = { aiScore, repeatScore, originalityScore, confidenceScore, structureScore, lexicalRichness, punctuationVariety, punctuationDensity, paragraphCount, avgSentenceLength, allWords, sentences, ttr, burstiness, similarPairsJaccard, semanticPairs, repeatedTrigrams, findings, summary, foundCliches, typoCount, listLines, passiveCount, allSimilarPairs, sentLengths, filteredWords, clicheDensity, passiveDensity, trigramDensity };
 
   renderScoreHero(aiScore, repeatScore, originalityScore);
   renderMetrics(allWords.length, sentences.length, ttr, burstiness);
+  renderSourceOverview(paragraphCount, avgSentenceLength, punctuationVariety, lexicalRichness);
+  renderConfidence(confidenceScore, wordCount, sentenceCount);
   renderRadar(clichPct, typoPct, listPct, passPct, burstiness < 0.45 ? 80 : 20);
-  renderGauges(foundCliches, typoCount, listLines, passiveCount, allSimilarPairs, repeatedTrigrams, burstiness);
+  renderRiskChips(aiScore, repeatScore, originalityScore, confidenceScore, repetitionRatio, clicheDensity);
+  renderGauges(foundCliches, typoCount, listLines, passiveCount, allSimilarPairs, repeatedTrigrams, burstiness, structureScore, lexicalRichness);
   renderFindings(findings);
   renderRepeats(similarPairsJaccard, semanticPairs);
   renderExpressions(foundCliches, repeatedTrigrams);
@@ -887,6 +1016,38 @@ function renderMetrics(wc, sc, ttr, burst) {
     '<div class="metric-card"><div class="metric-icon purple">📐</div><div class="metric-body"><div class="metric-val">' + burst.toFixed(2) + '</div><div class="metric-lbl">Cümle Varyansı</div></div></div>';
 }
 
+function renderSourceOverview(paragraphCount, avgSentenceLength, punctuationVariety, lexicalRichness) {
+  document.getElementById('sourceOverview').innerHTML =
+    '<div class="insight-stat"><div class="insight-stat-value">' + paragraphCount + '</div><div class="insight-stat-label">Paragraf</div></div>' +
+    '<div class="insight-stat"><div class="insight-stat-value">' + avgSentenceLength.toFixed(1) + '</div><div class="insight-stat-label">Ort. Cümle Uzunluğu</div></div>' +
+    '<div class="insight-stat"><div class="insight-stat-value">' + punctuationVariety + '</div><div class="insight-stat-label">Noktalama Çeşidi</div></div>' +
+    '<div class="insight-stat"><div class="insight-stat-value">' + lexicalRichness.toFixed(0) + '</div><div class="insight-stat-label">Lexical Richness</div></div>' +
+    '<div class="insight-stat"><div class="insight-stat-value">' + (lastResults ? lastResults.similarPairsJaccard.length : 0) + '</div><div class="insight-stat-label">Kelime Tekrarı</div></div>' +
+    '<div class="insight-stat"><div class="insight-stat-value">' + (lastResults ? lastResults.semanticPairs.length : 0) + '</div><div class="insight-stat-label">Anlamsal Tekrar</div></div>';
+}
+
+function renderConfidence(confidenceScore, wordCount, sentenceCount) {
+  document.getElementById('confidenceValue').textContent = confidenceScore;
+  document.getElementById('confidenceFill').style.width = confidenceScore + '%';
+  document.getElementById('confidenceFill').style.background = confidenceScore >= 70 ? 'var(--green)' : confidenceScore >= 50 ? 'var(--yellow)' : 'var(--red)';
+  let txt = 'Kısa veya parçalı metinlerde güven düşer.';
+  if (confidenceScore >= 80) txt = 'Yeterli metin uzunluğu ve cümle sayısı sayesinde bu analiz yüksek güvenle üretildi.';
+  else if (confidenceScore >= 60) txt = 'Analiz yapılabilir seviyede veri var; sonuçlar yön gösterici olarak okunmalı.';
+  document.getElementById('confidenceText').textContent = txt + ' (' + wordCount + ' kelime / ' + sentenceCount + ' cümle)';
+}
+
+function renderRiskChips(ai, repeat, originality, confidence, repetitionRatio, clicheDensity) {
+  const chips = [];
+  chips.push('<span class="chip ' + (ai > 60 ? 'chip-risk' : ai >= 30 ? 'chip-warn' : 'chip-safe') + '">AI Risk ' + ai + '</span>');
+  chips.push('<span class="chip ' + (repeat > 60 ? 'chip-risk' : repeat >= 30 ? 'chip-warn' : 'chip-safe') + '">Tekrar ' + repeat + '</span>');
+  chips.push('<span class="chip ' + (originality >= 65 ? 'chip-safe' : originality >= 40 ? 'chip-warn' : 'chip-risk') + '">Orijinallik ' + originality + '</span>');
+  chips.push('<span class="chip ' + (confidence >= 70 ? 'chip-safe' : confidence >= 50 ? 'chip-warn' : 'chip-risk') + '">Güven ' + confidence + '</span>');
+  if (repetitionRatio > 0.15) chips.push('<span class="chip chip-risk">Yüksek tekrar oranı</span>');
+  if (clicheDensity > 2) chips.push('<span class="chip chip-warn">Klişe yoğunluğu yüksek</span>');
+  if (lastResults && lastResults.structureScore >= 55) chips.push('<span class="chip chip-safe">Yapı tutarlı</span>');
+  document.getElementById('riskChips').innerHTML = chips.join('');
+}
+
 function renderRadar(clich, typo, list, pass, mono) {
   if (radarChartInstance) radarChartInstance.destroy();
   radarChartInstance = new Chart(document.getElementById('radarChart').getContext('2d'), {
@@ -911,7 +1072,7 @@ function renderRadar(clich, typo, list, pass, mono) {
   });
 }
 
-function renderGauges(cliches, typos, lists, passives, pairs, trigrams, burst) {
+function renderGauges(cliches, typos, lists, passives, pairs, trigrams, burst, structureScore, lexicalRichness) {
   const items = [
     { label: 'Klişeler', val: cliches.length, pct: cliches.length >= 3 ? 100 : cliches.length >= 1 ? 50 : 0, color: 'var(--yellow)' },
     { label: 'Tipografik', val: typos, pct: typos >= 3 ? 100 : typos >= 1 ? 40 : 0, color: 'var(--accent)' },
@@ -920,6 +1081,8 @@ function renderGauges(cliches, typos, lists, passives, pairs, trigrams, burst) {
     { label: 'Benzer Cümle', val: pairs.length, pct: pairs.length > 0 ? Math.min(pairs.length * 25, 100) : 0, color: 'var(--red)' },
     { label: 'Trigram', val: trigrams.length, pct: trigrams.length > 3 ? Math.min((trigrams.length-3)*20, 100) : 0, color: 'var(--red)' },
     { label: 'Varyans', val: burst.toFixed(2), pct: burst < 0.45 ? 80 : burst < 0.7 ? 40 : 10, color: 'var(--accent)' },
+    { label: 'Yapı', val: Math.round(structureScore), pct: structureScore, color: 'var(--green)' },
+    { label: 'Lexical', val: Math.round(lexicalRichness), pct: lexicalRichness, color: 'var(--accent)' },
   ];
   document.getElementById('gauges').innerHTML = '<div class="gauge-row">' + items.map(it =>
     '<div class="gauge-item"><span class="gauge-label">' + it.label + '</span><div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width:' + it.pct + '%;background:' + it.color + '"></div></div><span class="gauge-val">' + it.val + '</span></div>'
@@ -1019,8 +1182,10 @@ function copyResults() {
   let txt = '=== SEO İÇERİK EMEK & KALİTE ANALİZ RAPORU ===\n\n';
   txt += 'Yapay Zeka Skoru: ' + r.aiScore + '/100\n';
   txt += 'Tekrar Skoru: ' + r.repeatScore + '/100\n';
-  txt += 'SEO İçerik Emek Skoru: ' + r.originalityScore.toFixed(0) + '/100\n\n';
-  txt += 'Kelime: ' + r.allWords.length + ' | Cümle: ' + r.sentences.length + ' | TTR: %' + (r.ttr*100).toFixed(1) + '\n\n';
+  txt += 'Orijinallik Skoru: ' + r.originalityScore.toFixed(0) + '/100\n\n';
+  txt += 'Analiz Güveni: ' + r.confidenceScore + '/100\n';
+  txt += 'Yapı Skoru: ' + Math.round(r.structureScore) + '/100 | Lexical Richness: ' + Math.round(r.lexicalRichness) + '/100\n';
+  txt += 'Kelime: ' + r.allWords.length + ' | Cümle: ' + r.sentences.length + ' | Paragraf: ' + r.paragraphCount + ' | TTR: %' + (r.ttr*100).toFixed(1) + '\n\n';
   txt += 'BULGULAR:\n';
   r.findings.forEach(f => { txt += '- [' + f.badge + '] ' + f.text + '\n'; });
   if (r.similarPairsJaccard.length > 0) {
