@@ -1017,63 +1017,82 @@ def render_html_block(markup: str):
         st.markdown(markup, unsafe_allow_html=True)
 
 
+def style_static_chart(ax, axis: str):
+    ax.set_facecolor("#fcfcff")
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+    ax.spines["bottom"].set_color("#cbd5e1")
+    ax.spines["bottom"].set_linewidth(0.9)
+    ax.set_axisbelow(True)
+    if axis == "y":
+        ax.grid(axis="y", color="#e9eef7", linewidth=0.9, linestyle=(0, (2, 3)))
+    else:
+        ax.grid(axis="x", color="#e9eef7", linewidth=0.9, linestyle=(0, (2, 3)))
+    ax.tick_params(axis="x", labelsize=9, colors="#475569", length=0, pad=8)
+    ax.tick_params(axis="y", labelsize=9, colors="#334155", length=0, pad=8)
+
+
 def build_static_vertical_chart(
     labels: list[str], values: list[int], colors: list[str]
 ):
-    fig, ax = plt.subplots(figsize=(5.8, 3.8), dpi=150)
+    fig, ax = plt.subplots(figsize=(5.9, 3.9), dpi=150)
     fig.patch.set_facecolor("white")
-    ax.set_facecolor("white")
-    bars = ax.bar(labels, values, color=colors, width=0.62)
-    ax.set_ylim(0, max(values + [1]) * 1.18)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.spines["left"].set_color("#d1d5db")
-    ax.spines["bottom"].set_color("#d1d5db")
-    ax.grid(axis="y", color="#eef2f7", linewidth=0.8)
-    ax.set_axisbelow(True)
-    ax.tick_params(axis="x", labelsize=9, colors="#475569")
-    ax.tick_params(axis="y", labelsize=9, colors="#475569")
+    upper = max(values + [1])
+    bars = ax.bar(
+        labels, values, color=colors, width=0.58, edgecolor="#ffffff", linewidth=1.4
+    )
+    ax.set_ylim(0, upper * 1.22)
+    style_static_chart(ax, "y")
     for bar, value in zip(bars, values):
         ax.text(
             bar.get_x() + bar.get_width() / 2,
-            bar.get_height() + (max(values + [1]) * 0.03),
+            bar.get_height() + (upper * 0.035),
             str(value),
             ha="center",
             va="bottom",
             fontsize=8,
             color="#334155",
             fontweight="bold",
+            bbox={
+                "boxstyle": "round,pad=0.25,rounding_size=0.45",
+                "fc": "#ffffff",
+                "ec": "#dbe4f0",
+                "lw": 0.8,
+            },
         )
-    plt.tight_layout()
+    fig.subplots_adjust(left=0.08, right=0.98, bottom=0.18, top=0.94)
     return fig
 
 
 def build_static_horizontal_chart(labels: list[str], values: list[int], color: str):
-    fig_height = max(3.8, len(labels) * 0.34)
-    fig, ax = plt.subplots(figsize=(6.0, fig_height), dpi=150)
+    fig_height = max(3.8, len(labels) * 0.38)
+    fig, ax = plt.subplots(figsize=(6.1, fig_height), dpi=150)
     fig.patch.set_facecolor("white")
-    ax.set_facecolor("white")
-    bars = ax.barh(labels, values, color=color, height=0.58)
+    bars = ax.barh(
+        labels, values, color=color, height=0.56, edgecolor="#ffffff", linewidth=1.2
+    )
     ax.invert_yaxis()
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.spines["left"].set_visible(False)
-    ax.spines["bottom"].set_color("#d1d5db")
-    ax.grid(axis="x", color="#eef2f7", linewidth=0.8)
-    ax.set_axisbelow(True)
-    ax.tick_params(axis="x", labelsize=9, colors="#475569")
-    ax.tick_params(axis="y", labelsize=9, colors="#334155")
+    style_static_chart(ax, "x")
+    upper = max(values + [1])
+    ax.set_xlim(0, upper * 1.18)
     for bar, value in zip(bars, values):
         ax.text(
-            value + (max(values + [1]) * 0.02),
+            value + (upper * 0.02),
             bar.get_y() + bar.get_height() / 2,
             str(value),
             va="center",
             fontsize=8,
             color="#334155",
             fontweight="bold",
+            bbox={
+                "boxstyle": "round,pad=0.23,rounding_size=0.45",
+                "fc": "#ffffff",
+                "ec": "#dbe4f0",
+                "lw": 0.8,
+            },
         )
-    plt.tight_layout()
+    fig.subplots_adjust(left=0.27, right=0.97, bottom=0.10, top=0.96)
     return fig
 
 
