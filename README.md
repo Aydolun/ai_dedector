@@ -3,9 +3,10 @@ title: Metin Diligence Analizörü
 emoji: 🧠
 colorFrom: indigo
 colorTo: purple
-sdk: streamlit
-sdk_version: "1.40.2"
+sdk: docker
+python_version: "3.11"
 app_file: streamlit_app.py
+app_port: 8501
 pinned: false
 license: mit
 ---
@@ -32,10 +33,10 @@ streamlit run streamlit_app.py
 
 ## Deploy
 
-Streamlit Community Cloud veya Hugging Face Spaces için ana dosya:
+Streamlit Community Cloud için ana dosya:
 
 ```text
 streamlit_app.py
 ```
 
-Bu repo artık sadece Streamlit sürümünü içerir.
+Hugging Face Spaces üzerinde ise uygulama Docker içinde Streamlit olarak çalıştırılır.

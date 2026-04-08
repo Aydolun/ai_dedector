@@ -4,6 +4,7 @@ import re
 from collections import Counter
 from urllib.parse import urlparse
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -1016,6 +1017,66 @@ def render_html_block(markup: str):
         st.markdown(markup, unsafe_allow_html=True)
 
 
+def build_static_vertical_chart(
+    labels: list[str], values: list[int], colors: list[str]
+):
+    fig, ax = plt.subplots(figsize=(5.8, 3.8), dpi=150)
+    fig.patch.set_facecolor("white")
+    ax.set_facecolor("white")
+    bars = ax.bar(labels, values, color=colors, width=0.62)
+    ax.set_ylim(0, max(values + [1]) * 1.18)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_color("#d1d5db")
+    ax.spines["bottom"].set_color("#d1d5db")
+    ax.grid(axis="y", color="#eef2f7", linewidth=0.8)
+    ax.set_axisbelow(True)
+    ax.tick_params(axis="x", labelsize=9, colors="#475569")
+    ax.tick_params(axis="y", labelsize=9, colors="#475569")
+    for bar, value in zip(bars, values):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + (max(values + [1]) * 0.03),
+            str(value),
+            ha="center",
+            va="bottom",
+            fontsize=8,
+            color="#334155",
+            fontweight="bold",
+        )
+    plt.tight_layout()
+    return fig
+
+
+def build_static_horizontal_chart(labels: list[str], values: list[int], color: str):
+    fig_height = max(3.8, len(labels) * 0.34)
+    fig, ax = plt.subplots(figsize=(6.0, fig_height), dpi=150)
+    fig.patch.set_facecolor("white")
+    ax.set_facecolor("white")
+    bars = ax.barh(labels, values, color=color, height=0.58)
+    ax.invert_yaxis()
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+    ax.spines["bottom"].set_color("#d1d5db")
+    ax.grid(axis="x", color="#eef2f7", linewidth=0.8)
+    ax.set_axisbelow(True)
+    ax.tick_params(axis="x", labelsize=9, colors="#475569")
+    ax.tick_params(axis="y", labelsize=9, colors="#334155")
+    for bar, value in zip(bars, values):
+        ax.text(
+            value + (max(values + [1]) * 0.02),
+            bar.get_y() + bar.get_height() / 2,
+            str(value),
+            va="center",
+            fontsize=8,
+            color="#334155",
+            fontweight="bold",
+        )
+    plt.tight_layout()
+    return fig
+
+
 def score_color_hex(score: float) -> str:
     if score > 60:
         return "#dc2626"
@@ -1780,20 +1841,22 @@ if result:
                 else:
                     length_buckets["35+"] += 1
             st.markdown("##### Cümle Uzunluk Dağılımı")
-            st.bar_chart(
-                pd.DataFrame(
-                    {"Cümle Sayısı": list(length_buckets.values())},
-                    index=list(length_buckets.keys()),
-                )
+            sentence_fig = build_static_vertical_chart(
+                list(length_buckets.keys()),
+                list(length_buckets.values()),
+                ["#22c55e", "#84cc16", "#f59e0b", "#f97316", "#ef4444"],
             )
+            st.pyplot(sentence_fig, use_container_width=False)
+            plt.close(sentence_fig)
 
         with chart_col2:
             st.markdown("##### En Sık 12 Kelime")
             if result["top_words"]:
-                top_word_df = pd.DataFrame(
-                    result["top_words"], columns=["Kelime", "Tekrar"]
-                ).set_index("Kelime")
-                st.bar_chart(top_word_df)
+                labels = [item[0] for item in result["top_words"]]
+                values = [item[1] for item in result["top_words"]]
+                word_fig = build_static_horizontal_chart(labels, values, "#6366f1")
+                st.pyplot(word_fig, use_container_width=False)
+                plt.close(word_fig)
             else:
                 st.info("Grafik için yeterli kelime bulunamadı.")
 

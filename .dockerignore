@@ -1,0 +1,8 @@
+.git
+__pycache__
+.ruff_cache
+.devcontainer
+.streamlit/secrets.toml
+*.pyc
+*.pyo
+*.pyd
